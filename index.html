@@ -20,7 +20,58 @@
         width: 100%;
       }
 
-      /* Стили для всплывающего окна */
+      /* --- СТИЛИ ФИЛЬТРОВ --- */
+      .filter-container {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        right: 10px;
+        z-index: 1000;
+        display: flex;
+        gap: 8px;
+        overflow-x: auto; /* Горизонтальный скролл */
+        padding-bottom: 5px;
+        white-space: nowrap;
+        scrollbar-width: none; /* Скрываем скроллбар (Firefox) */
+      }
+      .filter-container::-webkit-scrollbar {
+        display: none; /* Скрываем скроллбар (Chrome/Safari) */
+      }
+
+      .filter-btn {
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 20px;
+        padding: 8px 16px;
+        font-size: 14px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        /* Запрет выделения текста на кнопке */
+        -webkit-user-select: none;
+        user-select: none;
+      }
+      .filter-btn:active {
+        transform: scale(0.95);
+      }
+
+      /* Активная кнопка */
+      .filter-btn.active {
+        background: #0088cc;
+        color: white;
+        border-color: #0088cc;
+      }
+      .color-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        display: inline-block;
+      }
+
+      /* --- СТИЛИ POPUP --- */
       .popup-content {
         min-width: 200px;
         max-width: 250px;
@@ -51,10 +102,11 @@
         color: #333;
         line-height: 1.4;
       }
+
       .route-btn {
         display: block;
         text-align: center;
-        background: #0088cc; /* Цвет Telegram */
+        background: #0088cc;
         color: white !important;
         padding: 10px;
         text-decoration: none;
@@ -66,12 +118,13 @@
       .route-btn:hover {
         background: #006699;
       }
-      /* Кнопка геолокации в правом нижнем углу */
+
+      /* --- КНОПКА ГЕОЛОКАЦИИ --- */
       .locate-btn {
         position: absolute;
         bottom: 20px;
         right: 20px;
-        z-index: 1000; /* Чтобы была поверх карты */
+        z-index: 1000;
         background: white;
         border: 2px solid rgba(0, 0, 0, 0.2);
         border-radius: 50%;
@@ -91,24 +144,47 @@
     </style>
   </head>
   <body>
+    <!-- Панель фильтров -->
+    <div class="filter-container">
+      <!-- data-cat="all" - это метка для кода, какую категорию фильтровать -->
+      <button class="filter-btn active" onclick="filterMap('all', this)">
+        Все
+      </button>
+      <button class="filter-btn" onclick="filterMap('cafe', this)">
+        <span class="color-dot" style="background: #007bff"></span> Cafe
+      </button>
+      <button class="filter-btn" onclick="filterMap('park', this)">
+        <span class="color-dot" style="background: #28a745"></span> Park
+      </button>
+      <button class="filter-btn" onclick="filterMap('shop', this)">
+        <span class="color-dot" style="background: #fd7e14"></span> Shopping
+        Mall
+      </button>
+      <button class="filter-btn" onclick="filterMap('vet', this)">
+        <span class="color-dot" style="background: #dc3545"></span> Vet
+      </button>
+    </div>
+
     <div id="map"></div>
-    <!-- Кнопка "Найти меня" -->
     <button class="locate-btn" onclick="findUserLocation()">📍</button>
-    <!-- Подключаем скрипты: Leaflet и парсер CSV -->
+
+    <!-- Подключаем скрипты -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
 
     <script>
-      // 1. Инициализация карты (Координаты центра Риги)
+      // 1. Инициализация карты
       var map = L.map('map').setView([56.9496, 24.1052], 13);
 
-      // 2. Добавляем слой карты (OpenStreetMap)
+      // Глобальный массив для хранения всех точек (чтобы фильтровать их)
+      var allMarkers = [];
+
+      // 2. Слой карты
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap contributors',
       }).addTo(map);
 
-      // 3. Ссылка на твою Google Таблицу (через CORS-прокси для надежности, если локально)
-      // Можно вернуть прямую ссылку, если уже работало локально
+      // 3. Ссылка на CSV
       var googleSheetCSV =
         'https://docs.google.com/spreadsheets/d/e/2PACX-1vQwZgrpWxkAs2G_aMBWNpPvYAOLa2WrnyXI2RvvkpK59SsAVkxj46d296AlU_Jet0O8wI9ZRORt1MMN/pub?gid=0&single=true&output=csv';
 
@@ -118,26 +194,22 @@
         header: true,
         complete: function (results) {
           results.data.forEach(function (place) {
-            // Защита от пустых строк и ошибок в числах
             var latStr = String(place.Lat).replace(',', '.');
             var lonStr = String(place.Lon).replace(',', '.');
             var lat = parseFloat(latStr);
             var lon = parseFloat(lonStr);
 
-            // Если координаты корректны
             if (!isNaN(lat) && !isNaN(lon)) {
-              // --- 1. ВЫБОР ЦВЕТА ---
-              var pointColor = '#3388ff'; // Синий (стандартный)
-
-              // Если категория содержит слово "Park" (даже Park, park, PARK)
+              // --- Определяем цвет ---
+              var pointColor = '#3388ff'; // default blue
               var cat = (place.Category || '').toLowerCase();
 
-              if (cat.includes('park')) pointColor = '#28a745'; // Зеленый
-              if (cat.includes('vet')) pointColor = '#dc3545'; // Красный
-              if (cat.includes('cafe')) pointColor = '#fd7e14'; // Оранжевый (Магазины/ТЦ)
-              if (cat.includes('tc')) pointColor = '#007bff'; // Синий
+              if (cat.includes('park')) pointColor = '#28a745';
+              if (cat.includes('vet')) pointColor = '#dc3545';
+              if (cat.includes('cafe')) pointColor = '#007bff'; // Синий для кафе (как на кнопке)
+              if (cat.includes('tc')) pointColor = '#fd7e14';
 
-              // --- 2. СОЗДАНИЕ МАРКЕРА ---
+              // --- Создаем маркер ---
               var marker = L.circleMarker([lat, lon], {
                 radius: 9,
                 fillColor: pointColor,
@@ -145,15 +217,20 @@
                 weight: 2,
                 opacity: 1,
                 fillOpacity: 0.85,
-              }).addTo(map);
+              });
 
-              // --- 3. НАПОЛНЕНИЕ POPUP ---
-              // Картинка (если есть ссылка)
+              marker.addTo(map); // Сразу показываем на карте
+
+              // --- Сохраняем в память для фильтрации ---
+              allMarkers.push({
+                layer: marker,
+                category: cat, // сохраняем категорию строкой (например "cafe pet friendly")
+              });
+
+              // --- Popup ---
               var imgHtml = place['Photo URL']
                 ? `<img src="${place['Photo URL']}" class="popup-img" alt="${place.Name}">`
                 : '';
-
-              // Комментарий (если есть)
               var commentHtml = place.Comment
                 ? `<div class="popup-comment">${place.Comment}</div>`
                 : '';
@@ -164,68 +241,97 @@
                     <div class="popup-title">${place.Name}</div>
                     <span class="popup-category">${place.Category}</span>
                     ${commentHtml}
-                    <a href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}" target="_blank" class="route-btn">
-                       🚗 Get here
-                    </a>
+                    <a href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}" target="_blank" class="route-btn">🚗 Get here</a>
                 </div>
               `;
-
               marker.bindPopup(popupContent);
             }
           });
         },
         error: function (err) {
-          console.error('Ошибка загрузки CSV:', err);
+          console.error('Error loading CSV:', err);
         },
       });
-      // --- ФУНКЦИЯ ГЕОЛОКАЦИИ ---
-      var userMarker = null; // Переменная для хранения маркера пользователя
 
-      function findUserLocation() {
-        if (!navigator.geolocation) {
-          alert('Ваш браузер/Telegram не поддерживает геолокацию 😢');
-          return;
+      // --- ЛОГИКА ФИЛЬТРАЦИИ ---
+      var currentFilters = ['all']; // Массив выбранных фильтров
+
+      function filterMap(category, btnElement) {
+        // 1. Управление кнопками
+        if (category === 'all') {
+          // Сброс на "Все"
+          currentFilters = ['all'];
+          // Снимаем активность со всех кнопок
+          document
+            .querySelectorAll('.filter-btn')
+            .forEach((b) => b.classList.remove('active'));
+          // Делаем активной кнопку "Все"
+          btnElement.classList.add('active');
+        } else {
+          // Нажата конкретная категория
+
+          // Если до этого было "Все", очищаем список
+          if (currentFilters.includes('all')) {
+            currentFilters = [];
+            document.querySelector('.filter-btn').classList.remove('active');
+          }
+
+          // Тоггл (вкл/выкл) категории
+          if (currentFilters.includes(category)) {
+            // Убираем из списка
+            currentFilters = currentFilters.filter((c) => c !== category);
+            btnElement.classList.remove('active');
+          } else {
+            // Добавляем в список
+            currentFilters.push(category);
+            btnElement.classList.add('active');
+          }
+
+          // Если ничего не выбрано, возвращаем "Все"
+          if (currentFilters.length === 0) {
+            currentFilters = ['all'];
+            document.querySelector('.filter-btn').classList.add('active');
+          }
         }
 
-        // Показываем, что ищем (можно поменять иконку на спиннер, но пока просто alert)
-        // alert("Ищем вас...");
+        // 2. Обновление карты
+        allMarkers.forEach(function (item) {
+          // Проверяем, подходит ли маркер под текущие фильтры
+          // Логика: Показывать, если выбрано "all" ИЛИ если категория маркера содержит ОДИН ИЗ выбранных фильтров
+          var isVisible =
+            currentFilters.includes('all') ||
+            currentFilters.some(function (filter) {
+              return item.category.includes(filter);
+            });
 
+          if (isVisible) {
+            if (!map.hasLayer(item.layer)) map.addLayer(item.layer);
+          } else {
+            if (map.hasLayer(item.layer)) map.removeLayer(item.layer);
+          }
+        });
+      }
+
+      // --- ГЕОЛОКАЦИЯ (Твоя старая функция) ---
+      var userMarker = null;
+      function findUserLocation() {
+        if (!navigator.geolocation) {
+          alert('Геолокация не поддерживается');
+          return;
+        }
         navigator.geolocation.getCurrentPosition(
-          // Успех
           function (position) {
             var lat = position.coords.latitude;
             var lon = position.coords.longitude;
-
-            // 1. Удаляем старый маркер, если был
-            if (userMarker) {
-              map.removeLayer(userMarker);
-            }
-
-            // 2. Рисуем точку "Я здесь" (Пульсирующая или просто отличная от других)
-            // Используем стандартный синий маркер Leaflet, но можно кастомный
+            if (userMarker) map.removeLayer(userMarker);
             userMarker = L.marker([lat, lon]).addTo(map);
-
-            userMarker.bindPopup('<b>Вы здесь!</b> 🐶').openPopup();
-
-            // 3. Плавно перелетаем картой к пользователю
-            map.flyTo([lat, lon], 15, {
-              animate: true,
-              duration: 1.5, // секунды
-            });
+            userMarker.bindPopup('<b>You are here!</b>').openPopup();
+            map.flyTo([lat, lon], 15, { animate: true, duration: 1.5 });
           },
-          // Ошибка
           function (error) {
-            console.error(error);
-            alert(
-              'Не удалось определить местоположение. Проверьте настройки прав доступа в телефоне.'
-            );
+            alert('Не удалось определить местоположение');
           },
-          // Настройки точности
-          {
-            enableHighAccuracy: true, // Просим GPS (точно), а не просто Wi-Fi
-            timeout: 10000, // Ждем максимум 10 секунд
-            maximumAge: 0, // Не берем старые кэшированные данные
-          }
+          { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
         );
       }
     </script>
