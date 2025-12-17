@@ -66,11 +66,34 @@
       .route-btn:hover {
         background: #006699;
       }
+      /* Кнопка геолокации в правом нижнем углу */
+      .locate-btn {
+        position: absolute;
+        bottom: 20px;
+        right: 20px;
+        z-index: 1000; /* Чтобы была поверх карты */
+        background: white;
+        border: 2px solid rgba(0, 0, 0, 0.2);
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+      }
+      .locate-btn:active {
+        background: #f0f0f0;
+        transform: translateY(2px);
+      }
     </style>
   </head>
   <body>
     <div id="map"></div>
-
+    <!-- Кнопка "Найти меня" -->
+    <button class="locate-btn" onclick="findUserLocation()">📍</button>
     <!-- Подключаем скрипты: Leaflet и парсер CSV -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
@@ -111,9 +134,8 @@
 
               if (cat.includes('park')) pointColor = '#28a745'; // Зеленый
               if (cat.includes('vet')) pointColor = '#dc3545'; // Красный
-              if (cat.includes('shop') || cat.includes('tc'))
-                pointColor = '#fd7e14'; // Оранжевый (Магазины/ТЦ)
-              if (cat.includes('cafe')) pointColor = '#007bff'; // Синий
+              if (cat.includes('cafe')) pointColor = '#fd7e14'; // Оранжевый (Магазины/ТЦ)
+              if (cat.includes('tc')) pointColor = '#007bff'; // Синий
 
               // --- 2. СОЗДАНИЕ МАРКЕРА ---
               var marker = L.circleMarker([lat, lon], {
@@ -156,6 +178,56 @@
           console.error('Ошибка загрузки CSV:', err);
         },
       });
+      // --- ФУНКЦИЯ ГЕОЛОКАЦИИ ---
+      var userMarker = null; // Переменная для хранения маркера пользователя
+
+      function findUserLocation() {
+        if (!navigator.geolocation) {
+          alert('Ваш браузер/Telegram не поддерживает геолокацию 😢');
+          return;
+        }
+
+        // Показываем, что ищем (можно поменять иконку на спиннер, но пока просто alert)
+        // alert("Ищем вас...");
+
+        navigator.geolocation.getCurrentPosition(
+          // Успех
+          function (position) {
+            var lat = position.coords.latitude;
+            var lon = position.coords.longitude;
+
+            // 1. Удаляем старый маркер, если был
+            if (userMarker) {
+              map.removeLayer(userMarker);
+            }
+
+            // 2. Рисуем точку "Я здесь" (Пульсирующая или просто отличная от других)
+            // Используем стандартный синий маркер Leaflet, но можно кастомный
+            userMarker = L.marker([lat, lon]).addTo(map);
+
+            userMarker.bindPopup('<b>Вы здесь!</b> 🐶').openPopup();
+
+            // 3. Плавно перелетаем картой к пользователю
+            map.flyTo([lat, lon], 15, {
+              animate: true,
+              duration: 1.5, // секунды
+            });
+          },
+          // Ошибка
+          function (error) {
+            console.error(error);
+            alert(
+              'Не удалось определить местоположение. Проверьте настройки прав доступа в телефоне.'
+            );
+          },
+          // Настройки точности
+          {
+            enableHighAccuracy: true, // Просим GPS (точно), а не просто Wi-Fi
+            timeout: 10000, // Ждем максимум 10 секунд
+            maximumAge: 0, // Не берем старые кэшированные данные
+          }
+        );
+      }
     </script>
   </body>
 </html>
