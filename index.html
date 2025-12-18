@@ -156,7 +156,7 @@
       <button class="filter-btn" onclick="filterMap('park', this)">
         <span class="color-dot" style="background: #28a745"></span> Park
       </button>
-      <button class="filter-btn" onclick="filterMap('shop', this)">
+      <button class="filter-btn" onclick="filterMap('tc', this)">
         <span class="color-dot" style="background: #fd7e14"></span> Shopping
         Mall
       </button>
@@ -207,7 +207,7 @@
               if (cat.includes('park')) pointColor = '#28a745';
               if (cat.includes('vet')) pointColor = '#dc3545';
               if (cat.includes('cafe')) pointColor = '#007bff'; // Синий для кафе (как на кнопке)
-              if (cat.includes('tc')) pointColor = '#fd7e14';
+              if (cat.includes('shop') || cat.includes('tc')) pointColor = '#fd7e14';
 
               // --- Создаем маркер ---
               var marker = L.circleMarker([lat, lon], {
