@@ -1,6 +1,20 @@
 <!DOCTYPE html>
 <html>
   <head>
+    <!-- Google tag (gtag.js) -->
+    <script
+      async
+      src="https://www.googletagmanager.com/gtag/js?id=G-GFDGSVJ2Q7"
+    ></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag('js', new Date());
+
+      gtag('config', 'G-GFDGSVJ2Q7');
+    </script>
     <title>Riga Pet Map</title>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -207,7 +221,8 @@
               if (cat.includes('park')) pointColor = '#28a745';
               if (cat.includes('vet')) pointColor = '#dc3545';
               if (cat.includes('cafe')) pointColor = '#007bff'; // Синий для кафе (как на кнопке)
-              if (cat.includes('shop') || cat.includes('tc')) pointColor = '#fd7e14';
+              if (cat.includes('shop') || cat.includes('tc'))
+                pointColor = '#fd7e14';
 
               // --- Создаем маркер ---
               var marker = L.circleMarker([lat, lon], {
@@ -241,7 +256,7 @@
                     <div class="popup-title">${place.Name}</div>
                     <span class="popup-category">${place.Category}</span>
                     ${commentHtml}
-                    <a href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}" target="_blank" class="route-btn">🚗 Get here</a>
+                    <a href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}" onclick="gtag('event', 'click_route', {'place_name': '${place.Name}'})" target="_blank" class="route-btn">🚗 Get here</a>
                 </div>
               `;
               marker.bindPopup(popupContent);
@@ -292,6 +307,11 @@
             currentFilters = ['all'];
             document.querySelector('.filter-btn').classList.add('active');
           }
+          if (typeof gtag === 'function') {
+            gtag('event', 'select_filter', {
+              'category_name': category,
+            });
+          }
         }
 
         // 2. Обновление карты
@@ -315,6 +335,13 @@
       // --- ГЕОЛОКАЦИЯ (Твоя старая функция) ---
       var userMarker = null;
       function findUserLocation() {
+        // GA4: фиксируем клик по кнопке геолокации
+        if (typeof gtag === 'function') {
+          gtag('event', 'click_locate_button', {
+            event_category: 'ui_interaction',
+            event_label: 'locate_me',
+          });
+        }
         if (!navigator.geolocation) {
           alert('Геолокация не поддерживается');
           return;
