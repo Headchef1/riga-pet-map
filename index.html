@@ -155,6 +155,29 @@
         background: #f0f0f0;
         transform: translateY(2px);
       }
+      /* Кнопка добавления места */
+      .add-place-btn {
+        position: absolute;
+        bottom: 80px; /* Чуть выше кнопки локации */
+        right: 20px;
+        z-index: 1000;
+        background: #007bff;
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        text-decoration: none; /* Чтобы ссылка внутри не подчеркивалась */
+      }
+      .add-place-btn:active {
+        transform: translateY(2px);
+      }
     </style>
   </head>
   <body>
@@ -181,6 +204,15 @@
 
     <div id="map"></div>
     <button class="locate-btn" onclick="findUserLocation()">📍</button>
+    <!-- Замени ссылку на свою Google Form -->
+    <a
+      href="https://forms.gle/ohSJpzb5Sm4qTYNb8"
+      target="_blank"
+      class="add-place-btn"
+      onclick="gtag('event', 'click_add_place')"
+    >
+      +
+    </a>
 
     <!-- Подключаем скрипты -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
