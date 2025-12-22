@@ -260,6 +260,15 @@
                 </div>
               `;
               marker.bindPopup(popupContent);
+              // --- ВОТ ЭТОТ НОВЫЙ БЛОК АНАЛИТИКИ (ВСТАВЛЯТЬ СЮДА) ---
+              marker.on('click', function () {
+                if (typeof gtag === 'function') {
+                  gtag('event', 'click_place_pin', {
+                    'place_name': place.Name,
+                    'place_category': place.Category,
+                  });
+                }
+              });
             }
           });
         },
