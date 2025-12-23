@@ -220,7 +220,10 @@
 
     <script>
       // 1. Инициализация карты
-      var map = L.map('map').setView([56.9496, 24.1052], 13);
+      var map = L.map('map', { zoomControl: false }).setView(
+        [56.9496, 24.1052],
+        13
+      );
 
       // Глобальный массив для хранения всех точек (чтобы фильтровать их)
       var allMarkers = [];
