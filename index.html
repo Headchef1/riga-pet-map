@@ -219,6 +219,23 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
 
     <script>
+      // 0. Функция генерации безопасной ссылки для Telegram (Base64)
+      function getSafeTelegramLink(botName, placeName) {
+        try {
+            // Кодируем в UTF-8 -> Base64
+            // Заменяем спецсимволы (+ на -, / на _) для совместимости с URL
+            // Убираем = в конце
+            const encoded = btoa(unescape(encodeURIComponent(placeName)))
+                .replace(/\+/g, '-')
+                .replace(/\//g, '_')
+                .replace(/=+$/, '');
+            return `https://t.me/${botName}?start=error_${encoded}`;
+        } catch (e) {
+            console.error("Ошибка кодирования ссылки:", e);
+            return `https://t.me/${botName}`;
+        }
+      }
+
       // 1. Инициализация карты
       var map = L.map('map', { zoomControl: false }).setView(
         [56.9496, 24.1052],
@@ -285,10 +302,9 @@
                 ? `<div class="popup-comment">${place.Comment}</div>`
                 : '';
 
-              // Кодируем название, чтобы ссылка не сломалась от пробелов
-              var safeName = encodeURIComponent(place.Name);
-              // Замени 'MyRigaDogBot' на юзернейм ТВОЕГО бота (без @)
+              // Генерируем БЕЗОПАСНУЮ ссылку для Telegram
               var botUsername = 'RigaDogMap_bot';
+              var reportLink = getSafeTelegramLink(botUsername, place.Name);
 
               var popupContent = `
                 <div class="popup-content">
@@ -299,7 +315,7 @@
                     <a href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}" onclick="gtag('event', 'click_route', {'place_name': '${place.Name}'})" target="_blank" class="route-btn">🚗 Get here</a>
                     
                     <div style="text-align: center; margin-top: 8px;">
-                        <a href="https://t.me/${botUsername}?start=error_${safeName}" 
+                        <a href="${reportLink}" 
                            onclick="gtag('event', 'click_report_issue', {'place_name': '${place.Name}'})"
                            target="_blank" 
                            style="color: #999; font-size: 11px; text-decoration: underline;">
