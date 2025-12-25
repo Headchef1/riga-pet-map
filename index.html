@@ -201,6 +201,9 @@
       <button class="filter-btn" onclick="filterMap('vet', this)">
         <span class="color-dot" style="background: #dc3545"></span> Vet
       </button>
+      <button class="filter-btn" onclick="filterMap('restaurant', this)">
+        <span class="color-dot" style="background: #ffde73"></span> Restaurant
+      </button>
     </div>
 
     <div id="map"></div>
@@ -273,7 +276,8 @@
 
               if (cat.includes('park')) pointColor = '#28a745';
               if (cat.includes('vet')) pointColor = '#dc3545';
-              if (cat.includes('cafe')) pointColor = '#007bff'; // Синий для кафе (как на кнопке)
+              if (cat.includes('cafe')) pointColor = '#007bff';
+              if (cat.includes('restaurant')) pointColor = '#ffde73';
               if (cat.includes('shop') || cat.includes('tc'))
                 pointColor = '#fd7e14';
 
