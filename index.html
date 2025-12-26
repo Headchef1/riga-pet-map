@@ -18,6 +18,9 @@
     <title>Riga Pet Map</title>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Telegram WebApp Script (ОБЯЗАТЕЛЬНО для локализации) -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    
     <!-- Подключаем стили карты Leaflet -->
     <link
       rel="stylesheet"
@@ -28,6 +31,9 @@
         margin: 0;
         padding: 0;
         font-family: sans-serif;
+        /* Адаптация под темную тему Telegram (по желанию) */
+        background-color: var(--tg-theme-bg-color, #fff);
+        color: var(--tg-theme-text-color, #000);
       }
       #map {
         height: 100vh;
@@ -43,13 +49,13 @@
         z-index: 1000;
         display: flex;
         gap: 8px;
-        overflow-x: auto; /* Горизонтальный скролл */
+        overflow-x: auto;
         padding-bottom: 5px;
         white-space: nowrap;
-        scrollbar-width: none; /* Скрываем скроллбар (Firefox) */
+        scrollbar-width: none;
       }
       .filter-container::-webkit-scrollbar {
-        display: none; /* Скрываем скроллбар (Chrome/Safari) */
+        display: none;
       }
 
       .filter-btn {
@@ -64,7 +70,6 @@
         display: flex;
         align-items: center;
         gap: 5px;
-        /* Запрет выделения текста на кнопке */
         -webkit-user-select: none;
         user-select: none;
       }
@@ -72,7 +77,6 @@
         transform: scale(0.95);
       }
 
-      /* Активная кнопка */
       .filter-btn.active {
         background: #0088cc;
         color: white;
@@ -93,7 +97,7 @@
       .popup-img {
         width: 100%;
         height: 140px;
-        object-fit: contain;
+        object-fit: contain; /* Логотип помещается целиком */
         background-color: #f8f9fa;
         border-radius: 8px;
         margin-bottom: 8px;
@@ -134,7 +138,7 @@
         background: #006699;
       }
 
-      /* --- КНОПКА ГЕОЛОКАЦИИ --- */
+      /* --- КНОПКИ --- */
       .locate-btn {
         position: absolute;
         bottom: 20px;
@@ -152,14 +156,9 @@
         font-size: 24px;
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
       }
-      .locate-btn:active {
-        background: #f0f0f0;
-        transform: translateY(2px);
-      }
-      /* Кнопка добавления места */
       .add-place-btn {
         position: absolute;
-        bottom: 80px; /* Чуть выше кнопки локации */
+        bottom: 80px;
         right: 20px;
         z-index: 1000;
         background: #007bff;
@@ -174,41 +173,36 @@
         justify-content: center;
         font-size: 24px;
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-        text-decoration: none; /* Чтобы ссылка внутри не подчеркивалась */
-      }
-      .add-place-btn:active {
-        transform: translateY(2px);
+        text-decoration: none;
       }
     </style>
   </head>
   <body>
     <!-- Панель фильтров -->
     <div class="filter-container">
-      <!-- data-cat="all" - это метка для кода, какую категорию фильтровать -->
-      <button class="filter-btn active" onclick="filterMap('all', this)">
+      <button class="filter-btn active" onclick="filterMap('all', this)" id="btn-all">
         All
       </button>
-      <button class="filter-btn" onclick="filterMap('cafe', this)">
+      <button class="filter-btn" onclick="filterMap('cafe', this)" id="btn-cafe">
         <span class="color-dot" style="background: #007bff"></span> Cafe
       </button>
-      <button class="filter-btn" onclick="filterMap('park', this)">
+      <button class="filter-btn" onclick="filterMap('restaurant', this)" id="btn-restaurant">
+        <span class="color-dot" style="background: #ffde73"></span> Restaurant
+      </button>
+      <button class="filter-btn" onclick="filterMap('park', this)" id="btn-park">
         <span class="color-dot" style="background: #28a745"></span> Park
       </button>
-      <button class="filter-btn" onclick="filterMap('tc', this)">
-        <span class="color-dot" style="background: #fd7e14"></span> Shopping
-        Mall
+      <button class="filter-btn" onclick="filterMap('tc', this)" id="btn-tc">
+        <span class="color-dot" style="background: #fd7e14"></span> Shopping Mall
       </button>
-      <button class="filter-btn" onclick="filterMap('vet', this)">
+      <button class="filter-btn" onclick="filterMap('vet', this)" id="btn-vet">
         <span class="color-dot" style="background: #dc3545"></span> Vet
-      </button>
-      <button class="filter-btn" onclick="filterMap('restaurant', this)">
-        <span class="color-dot" style="background: #ffde73"></span> Restaurant
       </button>
     </div>
 
     <div id="map"></div>
     <button class="locate-btn" onclick="findUserLocation()">📍</button>
-    <!-- Замени ссылку на свою Google Form -->
+    
     <a
       href="https://forms.gle/ohSJpzb5Sm4qTYNb8"
       target="_blank"
@@ -223,42 +217,96 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
 
     <script>
-      // 0. Функция генерации безопасной ссылки для Telegram (Base64)
+      // --- 1. ЛОКАЛИЗАЦИЯ (Словари) ---
+      const translations = {
+        en: { 
+            all: "All",
+            cafe: "Cafe", 
+            restaurant: "Restaurant",
+            park: "Park", 
+            tc: "Shopping Mall", 
+            vet: "Vet",
+            get_here: "Get here", 
+            report: "Report issue",
+            you_are_here: "You are here!"
+        },
+        ru: { 
+            all: "Все",
+            cafe: "Кафе", 
+            restaurant: "Ресторан",
+            park: "Парк", 
+            tc: "Торговый центр", 
+            vet: "Ветклиника",
+            get_here: "Маршрут", 
+            report: "Сообщить ошибку",
+            you_are_here: "Вы здесь!"
+        },
+        lv: { 
+            all: "Visi",
+            cafe: "Kafejnīca", 
+            restaurant: "Restorāns",
+            park: "Parks", 
+            tc: "Tirdzniecības centrs", 
+            vet: "Vetklīnika",
+            get_here: "Maršruts", 
+            report: "Ziņot par kļūdu",
+            you_are_here: "Jūs esat šeit!"
+        }
+      };
+
+      // --- ОПРЕДЕЛЕНИЕ ЯЗЫКА ---
+      let userLangCode = 'en'; 
+      if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) {
+         userLangCode = window.Telegram.WebApp.initDataUnsafe.user.language_code || 'en';
+      }
+      // Берем первые 2 буквы (ru-RU -> ru)
+      const currentLang = (userLangCode.slice(0, 2).toLowerCase() in translations) ? userLangCode.slice(0, 2).toLowerCase() : 'en';
+      const t = translations[currentLang];
+      
+      console.log("Detected language:", currentLang);
+
+      // --- ПРИМЕНЕНИЕ ПЕРЕВОДОВ К КНОПКАМ ---
+      // Для кнопки 'All' (текст в первом дочернем узле)
+      document.getElementById('btn-all').childNodes[0].textContent = t.all; 
+      
+      // Функция для кнопок с иконками (span)
+      function setBtnText(id, text) {
+        const btn = document.getElementById(id);
+        if(btn && btn.lastChild) {
+           btn.lastChild.textContent = " " + text;
+        }
+      }
+      setBtnText('btn-cafe', t.cafe);
+      setBtnText('btn-restaurant', t.restaurant);
+      setBtnText('btn-park', t.park);
+      setBtnText('btn-tc', t.tc);
+      setBtnText('btn-vet', t.vet);
+
+
+      // --- 2. БЕЗОПАСНАЯ ССЫЛКА ---
       function getSafeTelegramLink(botName, placeName) {
         try {
-            // Кодируем в UTF-8 -> Base64
-            // Заменяем спецсимволы (+ на -, / на _) для совместимости с URL
-            // Убираем = в конце
             const encoded = btoa(unescape(encodeURIComponent(placeName)))
                 .replace(/\+/g, '-')
                 .replace(/\//g, '_')
                 .replace(/=+$/, '');
             return `https://t.me/${botName}?start=error_${encoded}`;
         } catch (e) {
-            console.error("Ошибка кодирования ссылки:", e);
+            console.error("Link encoding error:", e);
             return `https://t.me/${botName}`;
         }
       }
 
-      // 1. Инициализация карты
-      var map = L.map('map', { zoomControl: false }).setView(
-        [56.9496, 24.1052],
-        13
-      );
-
-      // Глобальный массив для хранения всех точек (чтобы фильтровать их)
+      // --- 3. КАРТА ---
+      var map = L.map('map', { zoomControl: false }).setView([56.9496, 24.1052], 13);
       var allMarkers = [];
 
-      // 2. Слой карты
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap contributors',
       }).addTo(map);
 
-      // 3. Ссылка на CSV
-      var googleSheetCSV =
-        'https://docs.google.com/spreadsheets/d/e/2PACX-1vQwZgrpWxkAs2G_aMBWNpPvYAOLa2WrnyXI2RvvkpK59SsAVkxj46d296AlU_Jet0O8wI9ZRORt1MMN/pub?gid=0&single=true&output=csv';
+      var googleSheetCSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQwZgrpWxkAs2G_aMBWNpPvYAOLa2WrnyXI2RvvkpK59SsAVkxj46d296AlU_Jet0O8wI9ZRORt1MMN/pub?gid=0&single=true&output=csv';
 
-      // 4. Загрузка данных
       Papa.parse(googleSheetCSV, {
         download: true,
         header: true,
@@ -270,18 +318,24 @@
             var lon = parseFloat(lonStr);
 
             if (!isNaN(lat) && !isNaN(lon)) {
-              // --- Определяем цвет ---
-              var pointColor = '#3388ff'; // default blue
-              var cat = (place.Category || '').toLowerCase();
+              
+              // --- ЛОГИКА ДАННЫХ (Выбор языка) ---
+              // Ищем колонку с нужным языком (например Category_RU). Если нет -> берем EN. Если нет -> берем обычную Category.
+              let placeCategory = place[`Category_${currentLang.toUpperCase()}`] || place['Category_EN'] || place['Category'] || '';
+              let placeComment = place[`Comment_${currentLang.toUpperCase()}`] || place['Comment_EN'] || place['Comment'] || '';
 
-              if (cat.includes('park')) pointColor = '#28a745';
-              if (cat.includes('vet')) pointColor = '#dc3545';
-              if (cat.includes('cafe')) pointColor = '#007bff';
-              if (cat.includes('restaurant')) pointColor = '#ffde73';
-              if (cat.includes('shop') || cat.includes('tc'))
-                pointColor = '#fd7e14';
+              // "Техническая" категория для цветов и фильтров (всегда берем английскую или дефолтную)
+              let techCategory = (place['Category_EN'] || place['Category'] || '').toLowerCase();
+              
+              // --- ЦВЕТА ---
+              var pointColor = '#3388ff';
+              if (techCategory.includes('park')) pointColor = '#28a745';
+              if (techCategory.includes('vet')) pointColor = '#dc3545';
+              if (techCategory.includes('cafe')) pointColor = '#007bff';
+              if (techCategory.includes('restaurant')) pointColor = '#ffde73'; // Твой цвет для ресторанов
+              if (techCategory.includes('shop') || techCategory.includes('tc')) pointColor = '#fd7e14';
 
-              // --- Создаем маркер ---
+              // --- МАРКЕР ---
               var marker = L.circleMarker([lat, lon], {
                 radius: 9,
                 fillColor: pointColor,
@@ -291,23 +345,22 @@
                 fillOpacity: 0.85,
               });
 
-              marker.addTo(map); // Сразу показываем на карте
+              marker.addTo(map);
 
-              // --- Сохраняем в память для фильтрации ---
               allMarkers.push({
                 layer: marker,
-                category: cat, // сохраняем категорию строкой (например "cafe pet friendly")
+                category: techCategory, 
               });
 
-              // --- Popup ---
+              // --- POPUP ---
               var imgHtml = place['Photo URL']
                 ? `<img src="${place['Photo URL']}" class="popup-img" alt="${place.Name}">`
                 : '';
-              var commentHtml = place.Comment
-                ? `<div class="popup-comment">${place.Comment}</div>`
+              
+              var commentHtml = placeComment
+                ? `<div class="popup-comment">${placeComment}</div>`
                 : '';
 
-              // Генерируем БЕЗОПАСНУЮ ссылку для Telegram
               var botUsername = 'RigaDogMap_bot';
               var reportLink = getSafeTelegramLink(botUsername, place.Name);
 
@@ -315,27 +368,27 @@
                 <div class="popup-content">
                     ${imgHtml}
                     <div class="popup-title">${place.Name}</div>
-                    <span class="popup-category">${place.Category}</span>
+                    <span class="popup-category">${placeCategory}</span>
                     ${commentHtml}
-                    <a href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}" onclick="gtag('event', 'click_route', {'place_name': '${place.Name}'})" target="_blank" class="route-btn">🚗 Get here</a>
+                    <a href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}" onclick="gtag('event', 'click_route', {'place_name': '${place.Name}'})" target="_blank" class="route-btn">🚗 ${t.get_here}</a>
                     
                     <div style="text-align: center; margin-top: 8px;">
                         <a href="${reportLink}" 
                            onclick="gtag('event', 'click_report_issue', {'place_name': '${place.Name}'})"
                            target="_blank" 
                            style="color: #999; font-size: 11px; text-decoration: underline;">
-                           Report issue
+                           ${t.report}
                         </a>
                     </div>
                 </div>
               `;
               marker.bindPopup(popupContent);
-              // --- ВОТ ЭТОТ НОВЫЙ БЛОК АНАЛИТИКИ (ВСТАВЛЯТЬ СЮДА) ---
+              
               marker.on('click', function () {
                 if (typeof gtag === 'function') {
                   gtag('event', 'click_place_pin', {
                     'place_name': place.Name,
-                    'place_category': place.Category,
+                    'place_category': techCategory,
                   });
                 }
               });
@@ -348,55 +401,35 @@
       });
 
       // --- ЛОГИКА ФИЛЬТРАЦИИ ---
-      var currentFilters = ['all']; // Массив выбранных фильтров
+      var currentFilters = ['all'];
 
       function filterMap(category, btnElement) {
-        // 1. Управление кнопками
         if (category === 'all') {
-          // Сброс на "Все"
           currentFilters = ['all'];
-          // Снимаем активность со всех кнопок
-          document
-            .querySelectorAll('.filter-btn')
-            .forEach((b) => b.classList.remove('active'));
-          // Делаем активной кнопку "Все"
+          document.querySelectorAll('.filter-btn').forEach((b) => b.classList.remove('active'));
           btnElement.classList.add('active');
         } else {
-          // Нажата конкретная категория
-
-          // Если до этого было "Все", очищаем список
           if (currentFilters.includes('all')) {
             currentFilters = [];
             document.querySelector('.filter-btn').classList.remove('active');
           }
-
-          // Тоггл (вкл/выкл) категории
           if (currentFilters.includes(category)) {
-            // Убираем из списка
             currentFilters = currentFilters.filter((c) => c !== category);
             btnElement.classList.remove('active');
           } else {
-            // Добавляем в список
             currentFilters.push(category);
             btnElement.classList.add('active');
           }
-
-          // Если ничего не выбрано, возвращаем "Все"
           if (currentFilters.length === 0) {
             currentFilters = ['all'];
             document.querySelector('.filter-btn').classList.add('active');
           }
           if (typeof gtag === 'function') {
-            gtag('event', 'select_filter', {
-              'category_name': category,
-            });
+            gtag('event', 'select_filter', { 'category_name': category });
           }
         }
 
-        // 2. Обновление карты
         allMarkers.forEach(function (item) {
-          // Проверяем, подходит ли маркер под текущие фильтры
-          // Логика: Показывать, если выбрано "all" ИЛИ если категория маркера содержит ОДИН ИЗ выбранных фильтров
           var isVisible =
             currentFilters.includes('all') ||
             currentFilters.some(function (filter) {
@@ -411,10 +444,9 @@
         });
       }
 
-      // --- ГЕОЛОКАЦИЯ (Твоя старая функция) ---
+      // --- ГЕОЛОКАЦИЯ ---
       var userMarker = null;
       function findUserLocation() {
-        // GA4: фиксируем клик по кнопке геолокации
         if (typeof gtag === 'function') {
           gtag('event', 'click_locate_button', {
             event_category: 'ui_interaction',
@@ -422,7 +454,7 @@
           });
         }
         if (!navigator.geolocation) {
-          alert('Геолокация не поддерживается');
+          alert('Геолокация не поддерживается / Geolocation not supported');
           return;
         }
         navigator.geolocation.getCurrentPosition(
@@ -431,11 +463,11 @@
             var lon = position.coords.longitude;
             if (userMarker) map.removeLayer(userMarker);
             userMarker = L.marker([lat, lon]).addTo(map);
-            userMarker.bindPopup('<b>You are here!</b>').openPopup();
+            userMarker.bindPopup(`<b>${t.you_are_here}</b>`).openPopup();
             map.flyTo([lat, lon], 15, { animate: true, duration: 1.5 });
           },
           function (error) {
-            alert('Не удалось определить местоположение');
+            alert('Не удалось определить местоположение / Unable to retrieve location');
           },
           { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
         );
