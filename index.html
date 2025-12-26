@@ -20,7 +20,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <!-- Telegram WebApp Script (ОБЯЗАТЕЛЬНО для локализации) -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    
+
     <!-- Подключаем стили карты Leaflet -->
     <link
       rel="stylesheet"
@@ -180,20 +180,37 @@
   <body>
     <!-- Панель фильтров -->
     <div class="filter-container">
-      <button class="filter-btn active" onclick="filterMap('all', this)" id="btn-all">
+      <button
+        class="filter-btn active"
+        onclick="filterMap('all', this)"
+        id="btn-all"
+      >
         All
       </button>
-      <button class="filter-btn" onclick="filterMap('cafe', this)" id="btn-cafe">
+      <button
+        class="filter-btn"
+        onclick="filterMap('cafe', this)"
+        id="btn-cafe"
+      >
         <span class="color-dot" style="background: #007bff"></span> Cafe
       </button>
-      <button class="filter-btn" onclick="filterMap('restaurant', this)" id="btn-restaurant">
+      <button
+        class="filter-btn"
+        onclick="filterMap('restaurant', this)"
+        id="btn-restaurant"
+      >
         <span class="color-dot" style="background: #ffde73"></span> Restaurant
       </button>
-      <button class="filter-btn" onclick="filterMap('park', this)" id="btn-park">
+      <button
+        class="filter-btn"
+        onclick="filterMap('park', this)"
+        id="btn-park"
+      >
         <span class="color-dot" style="background: #28a745"></span> Park
       </button>
-      <button class="filter-btn" onclick="filterMap('tc', this)" id="btn-tc">
-        <span class="color-dot" style="background: #fd7e14"></span> Shopping Mall
+      <button class="filter-btn" onclick="filterMap('mall', this)" id="btn-mall">
+        <span class="color-dot" style="background: #fd7e14"></span> Shopping
+        Mall
       </button>
       <button class="filter-btn" onclick="filterMap('vet', this)" id="btn-vet">
         <span class="color-dot" style="background: #dc3545"></span> Vet
@@ -202,7 +219,7 @@
 
     <div id="map"></div>
     <button class="locate-btn" onclick="findUserLocation()">📍</button>
-    
+
     <a
       href="https://forms.gle/ohSJpzb5Sm4qTYNb8"
       target="_blank"
@@ -219,93 +236,105 @@
     <script>
       // --- 1. ЛОКАЛИЗАЦИЯ (Словари) ---
       const translations = {
-        en: { 
-            all: "All",
-            cafe: "Cafe", 
-            restaurant: "Restaurant",
-            park: "Park", 
-            tc: "Shopping Mall", 
-            vet: "Vet",
-            get_here: "Get here", 
-            report: "Report issue",
-            you_are_here: "You are here!"
+        en: {
+          all: 'All',
+          cafe: 'Cafe',
+          restaurant: 'Restaurant',
+          park: 'Park',
+          mall: 'Shopping Mall',
+          vet: 'Vet',
+          get_here: 'Get here',
+          report: 'Report issue',
+          you_are_here: 'You are here!',
         },
-        ru: { 
-            all: "Все",
-            cafe: "Кафе", 
-            restaurant: "Ресторан",
-            park: "Парк", 
-            tc: "Торговый центр", 
-            vet: "Ветклиника",
-            get_here: "Маршрут", 
-            report: "Сообщить ошибку",
-            you_are_here: "Вы здесь!"
+        ru: {
+          all: 'Все',
+          cafe: 'Кафе',
+          restaurant: 'Ресторан',
+          park: 'Парк',
+          mall: 'Торговый центр',
+          vet: 'Ветклиника',
+          get_here: 'Маршрут',
+          report: 'Сообщить ошибку',
+          you_are_here: 'Вы здесь!',
         },
-        lv: { 
-            all: "Visi",
-            cafe: "Kafejnīca", 
-            restaurant: "Restorāns",
-            park: "Parks", 
-            tc: "Tirdzniecības centrs", 
-            vet: "Vetklīnika",
-            get_here: "Maršruts", 
-            report: "Ziņot par kļūdu",
-            you_are_here: "Jūs esat šeit!"
-        }
+        lv: {
+          all: 'Visi',
+          cafe: 'Kafejnīca',
+          restaurant: 'Restorāns',
+          park: 'Parks',
+          mall: 'Tirdzniecības centrs',
+          vet: 'Vetklīnika',
+          get_here: 'Maršruts',
+          report: 'Ziņot par kļūdu',
+          you_are_here: 'Jūs esat šeit!',
+        },
       };
 
       // --- ОПРЕДЕЛЕНИЕ ЯЗЫКА ---
-      let userLangCode = 'en'; 
-      if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) {
-         userLangCode = window.Telegram.WebApp.initDataUnsafe.user.language_code || 'en';
+      let userLangCode = 'en';
+      if (
+        window.Telegram &&
+        window.Telegram.WebApp &&
+        window.Telegram.WebApp.initDataUnsafe &&
+        window.Telegram.WebApp.initDataUnsafe.user
+      ) {
+        userLangCode =
+          window.Telegram.WebApp.initDataUnsafe.user.language_code || 'en';
       }
       // Берем первые 2 буквы (ru-RU -> ru)
-      const currentLang = (userLangCode.slice(0, 2).toLowerCase() in translations) ? userLangCode.slice(0, 2).toLowerCase() : 'en';
+      const currentLang =
+        userLangCode.slice(0, 2).toLowerCase() in translations
+          ? userLangCode.slice(0, 2).toLowerCase()
+          : 'en';
       const t = translations[currentLang];
-      
-      console.log("Detected language:", currentLang);
+
+      console.log('Detected language:', currentLang);
 
       // --- ПРИМЕНЕНИЕ ПЕРЕВОДОВ К КНОПКАМ ---
       // Для кнопки 'All' (текст в первом дочернем узле)
-      document.getElementById('btn-all').childNodes[0].textContent = t.all; 
-      
+      document.getElementById('btn-all').childNodes[0].textContent = t.all;
+
       // Функция для кнопок с иконками (span)
       function setBtnText(id, text) {
         const btn = document.getElementById(id);
-        if(btn && btn.lastChild) {
-           btn.lastChild.textContent = " " + text;
+        if (btn && btn.lastChild) {
+          btn.lastChild.textContent = ' ' + text;
         }
       }
       setBtnText('btn-cafe', t.cafe);
       setBtnText('btn-restaurant', t.restaurant);
       setBtnText('btn-park', t.park);
-      setBtnText('btn-tc', t.tc);
+      setBtnText('btn-mall', t.mall);
       setBtnText('btn-vet', t.vet);
-
 
       // --- 2. БЕЗОПАСНАЯ ССЫЛКА ---
       function getSafeTelegramLink(botName, placeName) {
         try {
-            const encoded = btoa(unescape(encodeURIComponent(placeName)))
-                .replace(/\+/g, '-')
-                .replace(/\//g, '_')
-                .replace(/=+$/, '');
-            return `https://t.me/${botName}?start=error_${encoded}`;
+          const encoded = btoa(unescape(encodeURIComponent(placeName)))
+            .replace(/\+/g, '-')
+            .replace(/\//g, '_')
+            .replace(/=+$/, '');
+          return `https://t.me/${botName}?start=error_${encoded}`;
         } catch (e) {
-            console.error("Link encoding error:", e);
-            return `https://t.me/${botName}`;
+          console.error('Link encoding error:', e);
+          return `https://t.me/${botName}`;
         }
       }
 
       // --- 3. КАРТА ---
-      var map = L.map('map', { zoomControl: false }).setView([56.9496, 24.1052], 13);
+      var map = L.map('map', { zoomControl: false }).setView(
+        [56.9496, 24.1052],
+        13
+      );
       var allMarkers = [];
 
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap contributors',
       }).addTo(map);
 
-      var googleSheetCSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQwZgrpWxkAs2G_aMBWNpPvYAOLa2WrnyXI2RvvkpK59SsAVkxj46d296AlU_Jet0O8wI9ZRORt1MMN/pub?gid=0&single=true&output=csv';
+      var googleSheetCSV =
+        'https://docs.google.com/spreadsheets/d/e/2PACX-1vQwZgrpWxkAs2G_aMBWNpPvYAOLa2WrnyXI2RvvkpK59SsAVkxj46d296AlU_Jet0O8wI9ZRORt1MMN/pub?gid=0&single=true&output=csv';
 
       Papa.parse(googleSheetCSV, {
         download: true,
@@ -318,22 +347,34 @@
             var lon = parseFloat(lonStr);
 
             if (!isNaN(lat) && !isNaN(lon)) {
-              
               // --- ЛОГИКА ДАННЫХ (Выбор языка) ---
               // Ищем колонку с нужным языком (например Category_RU). Если нет -> берем EN. Если нет -> берем обычную Category.
-              let placeCategory = place[`Category_${currentLang.toUpperCase()}`] || place['Category_EN'] || place['Category'] || '';
-              let placeComment = place[`Comment_${currentLang.toUpperCase()}`] || place['Comment_EN'] || place['Comment'] || '';
+              let placeCategory =
+                place[`Category_${currentLang.toUpperCase()}`] ||
+                place['Category_EN'] ||
+                place['Category'] ||
+                '';
+              let placeComment =
+                place[`Comment_${currentLang.toUpperCase()}`] ||
+                place['Comment_EN'] ||
+                place['Comment'] ||
+                '';
 
               // "Техническая" категория для цветов и фильтров (всегда берем английскую или дефолтную)
-              let techCategory = (place['Category_EN'] || place['Category'] || '').toLowerCase();
-              
+              let techCategory = (
+                place['Category_EN'] ||
+                place['Category'] ||
+                ''
+              ).toLowerCase();
+
               // --- ЦВЕТА ---
               var pointColor = '#3388ff';
               if (techCategory.includes('park')) pointColor = '#28a745';
               if (techCategory.includes('vet')) pointColor = '#dc3545';
               if (techCategory.includes('cafe')) pointColor = '#007bff';
               if (techCategory.includes('restaurant')) pointColor = '#ffde73'; // Твой цвет для ресторанов
-              if (techCategory.includes('shop') || techCategory.includes('tc')) pointColor = '#fd7e14';
+              if (techCategory.includes('shop') || techCategory.includes('mall'))
+                pointColor = '#fd7e14';
 
               // --- МАРКЕР ---
               var marker = L.circleMarker([lat, lon], {
@@ -349,14 +390,14 @@
 
               allMarkers.push({
                 layer: marker,
-                category: techCategory, 
+                category: techCategory,
               });
 
               // --- POPUP ---
               var imgHtml = place['Photo URL']
                 ? `<img src="${place['Photo URL']}" class="popup-img" alt="${place.Name}">`
                 : '';
-              
+
               var commentHtml = placeComment
                 ? `<div class="popup-comment">${placeComment}</div>`
                 : '';
@@ -383,12 +424,12 @@
                 </div>
               `;
               marker.bindPopup(popupContent);
-              
+
               marker.on('click', function () {
                 if (typeof gtag === 'function') {
                   gtag('event', 'click_place_pin', {
-                    'place_name': place.Name,
-                    'place_category': techCategory,
+                    place_name: place.Name,
+                    place_category: techCategory,
                   });
                 }
               });
@@ -406,7 +447,9 @@
       function filterMap(category, btnElement) {
         if (category === 'all') {
           currentFilters = ['all'];
-          document.querySelectorAll('.filter-btn').forEach((b) => b.classList.remove('active'));
+          document
+            .querySelectorAll('.filter-btn')
+            .forEach((b) => b.classList.remove('active'));
           btnElement.classList.add('active');
         } else {
           if (currentFilters.includes('all')) {
@@ -425,7 +468,7 @@
             document.querySelector('.filter-btn').classList.add('active');
           }
           if (typeof gtag === 'function') {
-            gtag('event', 'select_filter', { 'category_name': category });
+            gtag('event', 'select_filter', { category_name: category });
           }
         }
 
@@ -467,7 +510,9 @@
             map.flyTo([lat, lon], 15, { animate: true, duration: 1.5 });
           },
           function (error) {
-            alert('Не удалось определить местоположение / Unable to retrieve location');
+            alert(
+              'Не удалось определить местоположение / Unable to retrieve location'
+            );
           },
           { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
         );
