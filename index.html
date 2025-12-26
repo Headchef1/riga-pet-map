@@ -208,7 +208,11 @@
       >
         <span class="color-dot" style="background: #28a745"></span> Park
       </button>
-      <button class="filter-btn" onclick="filterMap('mall', this)" id="btn-mall">
+      <button
+        class="filter-btn"
+        onclick="filterMap('mall', this)"
+        id="btn-mall"
+      >
         <span class="color-dot" style="background: #fd7e14"></span> Shopping
         Mall
       </button>
@@ -253,7 +257,7 @@
           restaurant: 'Ресторан',
           park: 'Парк',
           mall: 'Торговый центр',
-          vet: 'Ветклиника',
+          vet: 'Вет. клиника',
           get_here: 'Маршрут',
           report: 'Сообщить ошибку',
           you_are_here: 'Вы здесь!',
@@ -373,7 +377,10 @@
               if (techCategory.includes('vet')) pointColor = '#dc3545';
               if (techCategory.includes('cafe')) pointColor = '#007bff';
               if (techCategory.includes('restaurant')) pointColor = '#ffde73'; // Твой цвет для ресторанов
-              if (techCategory.includes('shop') || techCategory.includes('mall'))
+              if (
+                techCategory.includes('shop') ||
+                techCategory.includes('mall')
+              )
                 pointColor = '#fd7e14';
 
               // --- МАРКЕР ---
