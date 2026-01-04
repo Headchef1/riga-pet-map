@@ -249,7 +249,7 @@
           get_here: 'Get here',
           report: 'Report issue',
           you_are_here: 'You are here!',
-          working_hours: 'Working hours', // <--- Добавил
+          working_hours: 'Working hours',
         },
         ru: {
           all: 'Все',
@@ -261,7 +261,7 @@
           get_here: 'Маршрут',
           report: 'Сообщить ошибку',
           you_are_here: 'Вы здесь!',
-          working_hours: 'Время работы', // <--- Добавил
+          working_hours: 'Время работы',
         },
         lv: {
           all: 'Visi',
@@ -273,7 +273,7 @@
           get_here: 'Maršruts',
           report: 'Ziņot par kļūdu',
           you_are_here: 'Jūs esat šeit!',
-          working_hours: 'Darba laiks', // <--- Добавил
+          working_hours: 'Darba laiks',
         },
       };
 
@@ -325,6 +325,29 @@
         }
       }
 
+      // --- НОВАЯ ФУНКЦИЯ ДЛЯ КЛИКА ПО "REPORT ISSUE" ---
+      function handleReportClick(event, botName, placeName) {
+        event.preventDefault(); // Отменяем стандартный переход по ссылке
+
+        // Генерируем ссылку (внутри функции кодирование уже есть, но для JS-строки сделаем экранирование ниже)
+        const telegramLink = getSafeTelegramLink(botName, placeName);
+
+        // Логируем событие в аналитику
+        if (typeof gtag === 'function') {
+          gtag('event', 'click_report_issue', { place_name: placeName });
+        }
+
+        // Проверяем, открыто ли приложение внутри Telegram
+        if (window.Telegram && window.Telegram.WebApp) {
+          // Главный трюк: переключаемся на чат с ботом и закрываем Mini App
+          window.Telegram.WebApp.openTelegramLink(telegramLink);
+          window.Telegram.WebApp.close();
+        } else {
+          // Если это обычный браузер - просто переходим по ссылке в новой вкладке
+          window.open(telegramLink, '_blank');
+        }
+      }
+
       // --- 3. КАРТА ---
       var map = L.map('map', { zoomControl: false }).setView(
         [56.9496, 24.1052],
@@ -362,7 +385,7 @@
                 place['Comment'] ||
                 '';
 
-              // --- ЧАСЫ РАБОТЫ (НОВЫЙ БЛОК) ---
+              // --- ЧАСЫ РАБОТЫ ---
               let workHours =
                 place[`WorkHours_${currentLang.toUpperCase()}`] ||
                 place['WorkHours_EN'] ||
@@ -386,7 +409,6 @@
                     </div>
                   `;
               }
-              // --------------------------------
 
               let techCategory = (
                 place['Category_EN'] ||
@@ -433,7 +455,10 @@
                 : '';
 
               var botUsername = 'RigaDogMap_bot';
-              var reportLink = getSafeTelegramLink(botUsername, place.Name);
+
+              // Для функции handleReportClick нам нужно экранировать апострофы в названии для JS
+              // place.Name остается как есть, но при передаче в onclick мы делаем .replace(/'/g, "\\'")
+              var escapedNameForJs = place.Name.replace(/'/g, "\\'");
 
               var popupContent = `
                 <div class="popup-content">
@@ -444,12 +469,11 @@
                     ${workHoursHtml} <!-- ЧАСЫ РАБОТЫ -->
                     
                     ${commentHtml}
-                    <a href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}" onclick="gtag('event', 'click_route', {'place_name': '${place.Name}'})" target="_blank" class="route-btn">🚗 ${t.get_here}</a>
+                    <a href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}" onclick="gtag('event', 'click_route', {'place_name': '${escapedNameForJs}'})" target="_blank" class="route-btn">🚗 ${t.get_here}</a>
                     
                     <div style="text-align: center; margin-top: 8px;">
-                        <a href="${reportLink}" 
-                           onclick="gtag('event', 'click_report_issue', {'place_name': '${place.Name}'})"
-                           target="_blank" 
+                        <a href="#" 
+                           onclick="handleReportClick(event, '${botUsername}', '${escapedNameForJs}')"
                            style="color: #999; font-size: 11px; text-decoration: underline;">
                            ${t.report}
                         </a>
