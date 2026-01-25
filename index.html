@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
   <head>
     <!-- Google tag (gtag.js) -->
@@ -237,6 +237,21 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
 
     <script>
+      // --- TELEGRAM MINI APP LOGIC ---
+      if (window.Telegram && window.Telegram.WebApp) {
+        // 1. Раскрываем приложение на всю доступную высоту
+        window.Telegram.WebApp.expand();
+
+        // 2. Блокируем свайп вниз (чтобы карта не закрывалась при скролле)
+        // Проверяем версию, так как метод доступен с версии 7.7
+        if (window.Telegram.WebApp.isVersionAtLeast('7.7')) {
+          window.Telegram.WebApp.disableVerticalSwipes();
+        }
+
+        // Сообщаем телеграму, что приложение готово
+        window.Telegram.WebApp.ready();
+      }
+
       // --- 1. ЛОКАЛИЗАЦИЯ (Словари) ---
       const translations = {
         en: {
@@ -351,7 +366,7 @@
       // --- 3. КАРТА ---
       var map = L.map('map', { zoomControl: false }).setView(
         [56.9496, 24.1052],
-        13
+        13,
       );
       var allMarkers = [];
 
@@ -568,10 +583,10 @@
           },
           function (error) {
             alert(
-              'Не удалось определить местоположение / Unable to retrieve location'
+              'Не удалось определить местоположение / Unable to retrieve location',
             );
           },
-          { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+          { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
         );
       }
     </script>
