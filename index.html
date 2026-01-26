@@ -326,10 +326,13 @@
       setBtnText('btn-mall', t.mall);
       setBtnText('btn-vet', t.vet);
 
-      // --- 2. БЕЗОПАСНАЯ ССЫЛКА ---
-      function getSafeTelegramLink(botName, placeName) {
+      // --- 2. БЕЗОПАСНАЯ ССЫЛКА (ОБНОВЛЕНО) ---
+      function getSafeTelegramLink(botName, placeName, placeAddress) {
         try {
-          const encoded = btoa(unescape(encodeURIComponent(placeName)))
+          // Склеиваем имя и адрес через разделитель |
+          const rawData = placeName + '|' + (placeAddress || '');
+
+          const encoded = btoa(unescape(encodeURIComponent(rawData)))
             .replace(/\+/g, '-')
             .replace(/\//g, '_')
             .replace(/=+$/, '');
@@ -340,12 +343,16 @@
         }
       }
 
-      // --- НОВАЯ ФУНКЦИЯ ДЛЯ КЛИКА ПО "REPORT ISSUE" ---
-      function handleReportClick(event, botName, placeName) {
+      // --- ОБРАБОТКА КЛИКА ПО REPORT ISSUE (ОБНОВЛЕНО) ---
+      function handleReportClick(event, botName, placeName, placeAddress) {
         event.preventDefault(); // Отменяем стандартный переход по ссылке
 
-        // Генерируем ссылку (внутри функции кодирование уже есть, но для JS-строки сделаем экранирование ниже)
-        const telegramLink = getSafeTelegramLink(botName, placeName);
+        // Передаем и имя, и адрес
+        const telegramLink = getSafeTelegramLink(
+          botName,
+          placeName,
+          placeAddress,
+        );
 
         // Логируем событие в аналитику
         if (typeof gtag === 'function') {
@@ -406,6 +413,10 @@
                 place['WorkHours_EN'] ||
                 place['WorkHours'] ||
                 '';
+
+              // --- АДРЕС (ДОБАВЛЕНО) ---
+              // Если в таблице колонка называется иначе, поменяйте 'Address' на нужное имя
+              let placeAddress = place['Address'] || '';
 
               let workHoursHtml = '';
               if (workHours) {
@@ -471,9 +482,9 @@
 
               var botUsername = 'RigaDogMap_bot';
 
-              // Для функции handleReportClick нам нужно экранировать апострофы в названии для JS
-              // place.Name остается как есть, но при передаче в onclick мы делаем .replace(/'/g, "\\'")
+              // Экранирование для JS (ОБНОВЛЕНО)
               var escapedNameForJs = place.Name.replace(/'/g, "\\'");
+              var escapedAddressForJs = placeAddress.replace(/'/g, "\\'"); // Экранируем адрес тоже
 
               var popupContent = `
                 <div class="popup-content">
@@ -488,7 +499,7 @@
                     
                     <div style="text-align: center; margin-top: 8px;">
                         <a href="#" 
-                           onclick="handleReportClick(event, '${botUsername}', '${escapedNameForJs}')"
+                           onclick="handleReportClick(event, '${botUsername}', '${escapedNameForJs}', '${escapedAddressForJs}')"
                            style="color: #999; font-size: 11px; text-decoration: underline;">
                            ${t.report}
                         </a>
