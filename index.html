@@ -326,11 +326,22 @@
       setBtnText('btn-mall', t.mall);
       setBtnText('btn-vet', t.vet);
 
-      // --- 2. БЕЗОПАСНАЯ ССЫЛКА (ОБНОВЛЕНО) ---
+      // --- 2. БЕЗОПАСНАЯ ССЫЛКА (С обрезкой адреса) ---
       function getSafeTelegramLink(botName, placeName, placeAddress) {
         try {
-          // Склеиваем имя и адрес через разделитель |
-          const rawData = placeName + '|' + (placeAddress || '');
+          // 1. Берем адрес. Если его нет - пустая строка.
+          let safeAddr = placeAddress || '';
+
+          // 2. Если есть запятая, берем всё, что ДО неё.
+          if (safeAddr.includes(',')) {
+            safeAddr = safeAddr.split(',')[0];
+          }
+
+          // 3. На всякий случай обрезаем пробелы по краям
+          safeAddr = safeAddr.trim();
+
+          // Склеиваем
+          const rawData = placeName + '|' + safeAddr;
 
           const encoded = btoa(unescape(encodeURIComponent(rawData)))
             .replace(/\+/g, '-')
