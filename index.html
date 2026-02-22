@@ -1,594 +1,666 @@
-<!doctype html>
-<html>
-  <head>
+<!DOCTYPE html>
+<html lang="en">
+<head>
     <!-- Google tag (gtag.js) -->
-    <script
-      async
-      src="https://www.googletagmanager.com/gtag/js?id=G-GFDGSVJ2Q7"
-    ></script>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-GFDGSVJ2Q7"></script>
     <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag() {
-        dataLayer.push(arguments);
-      }
-      gtag('js', new Date());
-
-      gtag('config', 'G-GFDGSVJ2Q7');
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-GFDGSVJ2Q7');
     </script>
+    
     <title>Riga Pet Map</title>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    
     <!-- Telegram WebApp Script -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- Leaflet -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-    <!-- Подключаем стили карты Leaflet -->
-    <link
-      rel="stylesheet"
-      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    />
     <style>
-      body {
-        margin: 0;
-        padding: 0;
-        font-family: sans-serif;
-        background-color: var(--tg-theme-bg-color, #fff);
-        color: var(--tg-theme-text-color, #000);
-      }
-      #map {
-        height: 100vh;
-        width: 100%;
-      }
+        :root {
+            --bg-color: var(--tg-theme-bg-color, #ffffff);
+            --text-color: var(--tg-theme-text-color, #000000);
+            --hint-color: var(--tg-theme-hint-color, #999999);
+            --button-color: var(--tg-theme-button-color, #0088cc);
+            --button-text-color: var(--tg-theme-button-text-color, #ffffff);
+            --sheet-bg: #ffffff;
+        }
 
-      /* --- СТИЛИ ФИЛЬТРОВ --- */
-      .filter-container {
-        position: absolute;
-        top: 10px;
-        left: 10px;
-        right: 10px;
-        z-index: 1000;
-        display: flex;
-        gap: 8px;
-        overflow-x: auto;
-        padding-bottom: 5px;
-        white-space: nowrap;
-        scrollbar-width: none;
-      }
-      .filter-container::-webkit-scrollbar {
-        display: none;
-      }
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --sheet-bg: #1c1c1d;
+                --text-color: #ffffff;
+                --hint-color: #aaaaaa;
+            }
+        }
 
-      .filter-btn {
-        background: white;
-        border: 1px solid #ddd;
-        border-radius: 20px;
-        padding: 8px 16px;
-        font-size: 14px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        cursor: pointer;
-        transition: all 0.2s;
-        display: flex;
-        align-items: center;
-        gap: 5px;
-        -webkit-user-select: none;
-        user-select: none;
-      }
-      .filter-btn:active {
-        transform: scale(0.95);
-      }
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            overflow: hidden; /* Prevent body scroll */
+        }
 
-      .filter-btn.active {
-        background: #0088cc;
-        color: white;
-        border-color: #0088cc;
-      }
-      .color-dot {
-        width: 10px;
-        height: 10px;
-        border-radius: 50%;
-        display: inline-block;
-      }
+        #mapdiv {
+            height: 100vh;
+            width: 100%;
+            z-index: 1;
+        }
 
-      /* --- СТИЛИ POPUP --- */
-      .popup-content {
-        min-width: 200px;
-        max-width: 250px;
-      }
-      .popup-img {
-        width: 100%;
-        height: 140px;
-        object-fit: contain;
-        background-color: #f8f9fa;
-        border-radius: 8px;
-        margin-bottom: 8px;
-        display: block;
-      }
-      .popup-title {
-        margin: 0 0 5px;
-        font-size: 16px;
-        font-weight: bold;
-      }
-      .popup-category {
-        font-style: italic;
-        color: #666;
-        font-size: 13px;
-        display: block;
-        margin-bottom: 5px;
-      }
-      .popup-comment {
-        font-size: 14px;
-        margin: 8px 0;
-        color: #333;
-        line-height: 1.4;
-      }
+        /* Modern Glassmorphism Filters */
+        .filter-container {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            right: 15px;
+            z-index: 1000;
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            padding-bottom: 10px;
+            white-space: nowrap;
+            scrollbar-width: none;
+        }
+        .filter-container::-webkit-scrollbar { display: none; }
 
-      .route-btn {
-        display: block;
-        text-align: center;
-        background: #0088cc;
-        color: white !important;
-        padding: 10px;
-        text-decoration: none;
-        border-radius: 6px;
-        font-weight: bold;
-        margin-top: 10px;
-        font-size: 14px;
-      }
-      .route-btn:hover {
-        background: #006699;
-      }
+        .filter-btn {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            border-radius: 24px;
+            padding: 10px 18px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #333;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            user-select: none;
+        }
+        .filter-btn:active { transform: scale(0.95); }
+        .filter-btn.active {
+            background: var(--button-color);
+            color: var(--button-text-color);
+            border-color: var(--button-color);
+        }
+        
+        .color-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+        }
 
-      /* --- КНОПКИ --- */
-      .locate-btn {
-        position: absolute;
-        bottom: 20px;
-        right: 20px;
-        z-index: 1000;
-        background: white;
-        border: 2px solid rgba(0, 0, 0, 0.2);
-        border-radius: 50%;
-        width: 50px;
-        height: 50px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 24px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-      }
-      .add-place-btn {
-        position: absolute;
-        bottom: 80px;
-        right: 20px;
-        z-index: 1000;
-        background: #007bff;
-        color: white;
-        border: none;
-        border-radius: 50%;
-        width: 50px;
-        height: 50px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 24px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-        text-decoration: none;
-      }
+        /* Floating Action Buttons */
+        .fab-container {
+            position: absolute;
+            bottom: 30px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .fab-btn {
+            background: var(--button-color);
+            color: var(--button-text-color);
+            border: none;
+            border-radius: 50%;
+            width: 56px;
+            height: 56px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            box-shadow: 0 6px 16px rgba(0, 136, 204, 0.3);
+            transition: transform 0.2s, background 0.2s;
+        }
+        .fab-btn:active { transform: scale(0.92); }
+        .fab-btn.locate {
+            background: #ffffff;
+            color: #333;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        /* Bottom Sheet UI */
+        .sheet-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 2000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease;
+        }
+        .sheet-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .bottom-sheet {
+            position: fixed;
+            bottom: -100%;
+            left: 0;
+            right: 0;
+            background: var(--sheet-bg);
+            z-index: 2001;
+            border-top-left-radius: 24px;
+            border-top-right-radius: 24px;
+            padding: 24px 20px 30px;
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+            transition: bottom 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            max-height: 85vh;
+            overflow-y: auto;
+            color: var(--text-color);
+        }
+        .bottom-sheet.active { bottom: 0; }
+
+        .sheet-drag-handle {
+            width: 40px;
+            height: 5px;
+            background: #ddd;
+            border-radius: 3px;
+            margin: -10px auto 20px;
+        }
+
+        /* Sheet Content Typography & Elements */
+        .sheet-img {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+            border-radius: 16px;
+            margin-bottom: 16px;
+            background-color: #f0f0f0;
+        }
+        .sheet-title {
+            margin: 0 0 5px;
+            font-size: 22px;
+            font-weight: 700;
+        }
+        .sheet-category {
+            font-size: 14px;
+            color: var(--hint-color);
+            font-weight: 500;
+            margin-bottom: 12px;
+            display: inline-block;
+        }
+        .sheet-comment {
+            font-size: 15px;
+            line-height: 1.5;
+            margin-bottom: 20px;
+        }
+        .sheet-hours {
+            background: rgba(128, 128, 128, 0.1);
+            padding: 12px;
+            border-radius: 12px;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+        .sheet-hours span { display: block; font-weight: 600; margin-bottom: 4px; }
+
+        .btn-primary {
+            display: block;
+            width: 100%;
+            text-align: center;
+            background: var(--button-color);
+            color: var(--button-text-color) !important;
+            padding: 14px;
+            text-decoration: none;
+            border-radius: 14px;
+            font-weight: 600;
+            font-size: 16px;
+            border: none;
+            box-sizing: border-box;
+            cursor: pointer;
+        }
+        .btn-report {
+            display: block;
+            text-align: center;
+            margin-top: 15px;
+            color: var(--hint-color);
+            font-size: 13px;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+
+        /* Add Place Form Styles */
+        .form-group { margin-bottom: 15px; }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--hint-color);
+        }
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 12px;
+            font-size: 16px;
+            background: rgba(128, 128, 128, 0.05);
+            color: var(--text-color);
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+        .form-control:focus {
+            outline: none;
+            border-color: var(--button-color);
+        }
+        
+        /* Map Crosshair for adding a place */
+        .map-crosshair {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 24px; height: 24px;
+            z-index: 1000;
+            pointer-events: none;
+            display: none;
+        }
+        .map-crosshair::before, .map-crosshair::after {
+            content: ''; position: absolute; background: #ff3b30;
+        }
+        .map-crosshair::before { top: 11px; left: 0; width: 24px; height: 2px; }
+        .map-crosshair::after { top: 0; left: 11px; width: 2px; height: 24px; }
+        
+        /* Hide default Leaflet controls to keep UI clean */
+        .leaflet-control-attribution { opacity: 0.6; font-size: 10px; }
+        .leaflet-control-zoom { display: none; }
     </style>
-  </head>
-  <body>
-    <!-- Панель фильтров -->
+</head>
+<body>
+
+    <!-- Top Filters -->
     <div class="filter-container">
-      <button
-        class="filter-btn active"
-        onclick="filterMap('all', this)"
-        id="btn-all"
-      >
-        All
-      </button>
-      <button
-        class="filter-btn"
-        onclick="filterMap('cafe', this)"
-        id="btn-cafe"
-      >
-        <span class="color-dot" style="background: #007bff"></span> Cafe
-      </button>
-      <button
-        class="filter-btn"
-        onclick="filterMap('restaurant', this)"
-        id="btn-restaurant"
-      >
-        <span class="color-dot" style="background: #ffde73"></span> Restaurant
-      </button>
-      <button
-        class="filter-btn"
-        onclick="filterMap('park', this)"
-        id="btn-park"
-      >
-        <span class="color-dot" style="background: #28a745"></span> Park
-      </button>
-      <button
-        class="filter-btn"
-        onclick="filterMap('mall', this)"
-        id="btn-mall"
-      >
-        <span class="color-dot" style="background: #fd7e14"></span> Shopping
-        Mall
-      </button>
-      <button class="filter-btn" onclick="filterMap('vet', this)" id="btn-vet">
-        <span class="color-dot" style="background: #dc3545"></span> Vet
-      </button>
+        <button class="filter-btn active" onclick="filterMap('all', this)" id="btn-all">All</button>
+        <button class="filter-btn" onclick="filterMap('cafe', this)" id="btn-cafe">
+            <span class="color-dot" style="background: #007bff"></span> Cafe
+        </button>
+        <button class="filter-btn" onclick="filterMap('restaurant', this)" id="btn-restaurant">
+            <span class="color-dot" style="background: #ffde73"></span> Restaurant
+        </button>
+        <button class="filter-btn" onclick="filterMap('park', this)" id="btn-park">
+            <span class="color-dot" style="background: #28a745"></span> Park
+        </button>
+        <button class="filter-btn" onclick="filterMap('mall', this)" id="btn-mall">
+            <span class="color-dot" style="background: #fd7e14"></span> Mall
+        </button>
+        <button class="filter-btn" onclick="filterMap('vet', this)" id="btn-vet">
+            <span class="color-dot" style="background: #dc3545"></span> Vet
+        </button>
     </div>
 
-    <div id="map"></div>
-    <button class="locate-btn" onclick="findUserLocation()">📍</button>
+    <!-- Map Container -->
+    <div id="mapdiv"></div>
+    <div class="map-crosshair" id="crosshair"></div>
 
-    <a
-      href="https://forms.gle/ohSJpzb5Sm4qTYNb8"
-      target="_blank"
-      class="add-place-btn"
-      onclick="gtag('event', 'click_add_place')"
-    >
-      +
-    </a>
+    <!-- Floating Buttons -->
+    <div class="fab-container">
+        <button class="fab-btn locate" onclick="findUserLocation()" id="btn-locate">📍</button>
+        <button class="fab-btn" onclick="openAddPlaceSheet()" id="btn-add">➕</button>
+    </div>
 
-    <!-- Подключаем скрипты -->
+    <!-- Bottom Sheet Overlay -->
+    <div class="sheet-overlay" id="sheetOverlay" onclick="closeAllSheets()"></div>
+
+    <!-- Place Details Bottom Sheet -->
+    <div class="bottom-sheet" id="placeSheet">
+        <div class="sheet-drag-handle"></div>
+        <div id="placeSheetContent">
+            <!-- Content injected via JS -->
+        </div>
+    </div>
+
+    <!-- Add Place Bottom Sheet -->
+    <div class="bottom-sheet" id="addPlaceSheet">
+        <div class="sheet-drag-handle"></div>
+        <h2 class="sheet-title" id="txt-add-title">Add New Place</h2>
+        <p class="sheet-category" id="txt-add-subtitle">Drag map to pin location</p>
+        
+        <div class="form-group">
+            <label id="lbl-name">Name</label>
+            <input type="text" id="add-name" class="form-control" placeholder="Doggo Cafe">
+        </div>
+        <div class="form-group">
+            <label id="lbl-category">Category</label>
+            <select id="add-category" class="form-control">
+                <option value="cafe">Cafe</option>
+                <option value="restaurant">Restaurant</option>
+                <option value="park">Park</option>
+                <option value="mall">Shopping Mall</option>
+                <option value="vet">Vet Clinic</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label id="lbl-comment">Comment (optional)</label>
+            <textarea id="add-comment" class="form-control" rows="2" placeholder="Dogs are welcome inside!"></textarea>
+        </div>
+        <button class="btn-primary" onclick="submitNewPlace()" id="btn-submit">Submit Place</button>
+    </div>
+
+    <!-- Scripts -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
 
     <script>
-      // --- TELEGRAM MINI APP LOGIC ---
-      if (window.Telegram && window.Telegram.WebApp) {
-        // 1. Раскрываем приложение на всю доступную высоту
-        window.Telegram.WebApp.expand();
-
-        // 2. Блокируем свайп вниз (чтобы карта не закрывалась при скролле)
-        // Проверяем версию, так как метод доступен с версии 7.7
-        if (window.Telegram.WebApp.isVersionAtLeast('7.7')) {
-          window.Telegram.WebApp.disableVerticalSwipes();
-        }
-
-        // Сообщаем телеграму, что приложение готово
-        window.Telegram.WebApp.ready();
-      }
-
-      // --- 1. ЛОКАЛИЗАЦИЯ (Словари) ---
-      const translations = {
-        en: {
-          all: 'All',
-          cafe: 'Cafe',
-          restaurant: 'Restaurant',
-          park: 'Park',
-          mall: 'Shopping Mall',
-          vet: 'Vet',
-          get_here: 'Get here',
-          report: 'Report issue',
-          you_are_here: 'You are here!',
-          working_hours: 'Working hours',
-        },
-        ru: {
-          all: 'Все',
-          cafe: 'Кафе',
-          restaurant: 'Ресторан',
-          park: 'Парк',
-          mall: 'Торговый центр',
-          vet: 'Вет. клиника',
-          get_here: 'Маршрут',
-          report: 'Сообщить ошибку',
-          you_are_here: 'Вы здесь!',
-          working_hours: 'Время работы',
-        },
-        lv: {
-          all: 'Visi',
-          cafe: 'Kafejnīca',
-          restaurant: 'Restorāns',
-          park: 'Parks',
-          mall: 'Tirdzniecības centrs',
-          vet: 'Vetklīnika',
-          get_here: 'Maršruts',
-          report: 'Ziņot par kļūdu',
-          you_are_here: 'Jūs esat šeit!',
-          working_hours: 'Darba laiks',
-        },
-      };
-
-      // --- ОПРЕДЕЛЕНИЕ ЯЗЫКА ---
-      let userLangCode = 'en';
-      if (
-        window.Telegram &&
-        window.Telegram.WebApp &&
-        window.Telegram.WebApp.initDataUnsafe &&
-        window.Telegram.WebApp.initDataUnsafe.user
-      ) {
-        userLangCode =
-          window.Telegram.WebApp.initDataUnsafe.user.language_code || 'en';
-      }
-      const currentLang =
-        userLangCode.slice(0, 2).toLowerCase() in translations
-          ? userLangCode.slice(0, 2).toLowerCase()
-          : 'en';
-      const t = translations[currentLang];
-
-      console.log('Detected language:', currentLang);
-
-      // --- ПРИМЕНЕНИЕ ПЕРЕВОДОВ К КНОПКАМ ---
-      document.getElementById('btn-all').childNodes[0].textContent = t.all;
-
-      function setBtnText(id, text) {
-        const btn = document.getElementById(id);
-        if (btn && btn.lastChild) {
-          btn.lastChild.textContent = ' ' + text;
-        }
-      }
-      setBtnText('btn-cafe', t.cafe);
-      setBtnText('btn-restaurant', t.restaurant);
-      setBtnText('btn-park', t.park);
-      setBtnText('btn-mall', t.mall);
-      setBtnText('btn-vet', t.vet);
-
-      // --- 2. БЕЗОПАСНАЯ ССЫЛКА ---
-      function getSafeTelegramLink(botName, placeName) {
-        try {
-          const encoded = btoa(unescape(encodeURIComponent(placeName)))
-            .replace(/\+/g, '-')
-            .replace(/\//g, '_')
-            .replace(/=+$/, '');
-          return `https://t.me/${botName}?start=error_${encoded}`;
-        } catch (e) {
-          console.error('Link encoding error:', e);
-          return `https://t.me/${botName}`;
-        }
-      }
-
-      // --- НОВАЯ ФУНКЦИЯ ДЛЯ КЛИКА ПО "REPORT ISSUE" ---
-      function handleReportClick(event, botName, placeName) {
-        event.preventDefault(); // Отменяем стандартный переход по ссылке
-
-        // Генерируем ссылку (внутри функции кодирование уже есть, но для JS-строки сделаем экранирование ниже)
-        const telegramLink = getSafeTelegramLink(botName, placeName);
-
-        // Логируем событие в аналитику
-        if (typeof gtag === 'function') {
-          gtag('event', 'click_report_issue', { place_name: placeName });
-        }
-
-        // Проверяем, открыто ли приложение внутри Telegram
+        // --- TELEGRAM MINI APP INIT ---
         if (window.Telegram && window.Telegram.WebApp) {
-          // Главный трюк: переключаемся на чат с ботом и закрываем Mini App
-          window.Telegram.WebApp.openTelegramLink(telegramLink);
-          window.Telegram.WebApp.close();
-        } else {
-          // Если это обычный браузер - просто переходим по ссылке в новой вкладке
-          window.open(telegramLink, '_blank');
-        }
-      }
-
-      // --- 3. КАРТА ---
-      var map = L.map('map', { zoomControl: false }).setView(
-        [56.9496, 24.1052],
-        13,
-      );
-      var allMarkers = [];
-
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors',
-      }).addTo(map);
-
-      var googleSheetCSV =
-        'https://docs.google.com/spreadsheets/d/e/2PACX-1vQwZgrpWxkAs2G_aMBWNpPvYAOLa2WrnyXI2RvvkpK59SsAVkxj46d296AlU_Jet0O8wI9ZRORt1MMN/pub?gid=0&single=true&output=csv';
-
-      Papa.parse(googleSheetCSV, {
-        download: true,
-        header: true,
-        complete: function (results) {
-          results.data.forEach(function (place) {
-            var latStr = String(place.Lat).replace(',', '.');
-            var lonStr = String(place.Lon).replace(',', '.');
-            var lat = parseFloat(latStr);
-            var lon = parseFloat(lonStr);
-
-            if (!isNaN(lat) && !isNaN(lon)) {
-              // --- ЛОГИКА ДАННЫХ (Выбор языка) ---
-              let placeCategory =
-                place[`Category_${currentLang.toUpperCase()}`] ||
-                place['Category_EN'] ||
-                place['Category'] ||
-                '';
-              let placeComment =
-                place[`Comment_${currentLang.toUpperCase()}`] ||
-                place['Comment_EN'] ||
-                place['Comment'] ||
-                '';
-
-              // --- ЧАСЫ РАБОТЫ ---
-              let workHours =
-                place[`WorkHours_${currentLang.toUpperCase()}`] ||
-                place['WorkHours_EN'] ||
-                place['WorkHours'] ||
-                '';
-
-              let workHoursHtml = '';
-              if (workHours) {
-                workHoursHtml = `
-                    <div style="
-                        margin-top: 8px; 
-                        padding: 6px; 
-                        background: #f1f3f4; 
-                        border-radius: 6px; 
-                        font-size: 13px; 
-                        color: #444;
-                        line-height: 1.4;
-                    ">
-                        <div style="font-weight: bold; margin-bottom: 2px;">🕒 ${t.working_hours}:</div>
-                        ${workHours} 
-                    </div>
-                  `;
-              }
-
-              let techCategory = (
-                place['Category_EN'] ||
-                place['Category'] ||
-                ''
-              ).toLowerCase();
-
-              // --- ЦВЕТА ---
-              var pointColor = '#3388ff';
-              if (techCategory.includes('park')) pointColor = '#28a745';
-              if (techCategory.includes('vet')) pointColor = '#dc3545';
-              if (techCategory.includes('cafe')) pointColor = '#007bff';
-              if (techCategory.includes('restaurant')) pointColor = '#ffde73';
-              if (
-                techCategory.includes('shop') ||
-                techCategory.includes('mall')
-              )
-                pointColor = '#fd7e14';
-
-              // --- МАРКЕР ---
-              var marker = L.circleMarker([lat, lon], {
-                radius: 9,
-                fillColor: pointColor,
-                color: '#fff',
-                weight: 2,
-                opacity: 1,
-                fillOpacity: 0.85,
-              });
-
-              marker.addTo(map);
-
-              allMarkers.push({
-                layer: marker,
-                category: techCategory,
-              });
-
-              // --- POPUP ---
-              var imgHtml = place['Photo URL']
-                ? `<img src="${place['Photo URL']}" class="popup-img" alt="${place.Name}">`
-                : '';
-
-              var commentHtml = placeComment
-                ? `<div class="popup-comment">${placeComment}</div>`
-                : '';
-
-              var botUsername = 'RigaDogMap_bot';
-
-              // Для функции handleReportClick нам нужно экранировать апострофы в названии для JS
-              // place.Name остается как есть, но при передаче в onclick мы делаем .replace(/'/g, "\\'")
-              var escapedNameForJs = place.Name.replace(/'/g, "\\'");
-
-              var popupContent = `
-                <div class="popup-content">
-                    ${imgHtml}
-                    <div class="popup-title">${place.Name}</div>
-                    <span class="popup-category">${placeCategory}</span>
-                    
-                    ${workHoursHtml} <!-- ЧАСЫ РАБОТЫ -->
-                    
-                    ${commentHtml}
-                    <a href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}" onclick="gtag('event', 'click_route', {'place_name': '${escapedNameForJs}'})" target="_blank" class="route-btn">🚗 ${t.get_here}</a>
-                    
-                    <div style="text-align: center; margin-top: 8px;">
-                        <a href="#" 
-                           onclick="handleReportClick(event, '${botUsername}', '${escapedNameForJs}')"
-                           style="color: #999; font-size: 11px; text-decoration: underline;">
-                           ${t.report}
-                        </a>
-                    </div>
-                </div>
-              `;
-              marker.bindPopup(popupContent);
-
-              marker.on('click', function () {
-                if (typeof gtag === 'function') {
-                  gtag('event', 'click_place_pin', {
-                    place_name: place.Name,
-                    place_category: techCategory,
-                  });
-                }
-              });
+            window.Telegram.WebApp.expand();
+            if (window.Telegram.WebApp.isVersionAtLeast('7.7')) {
+                window.Telegram.WebApp.disableVerticalSwipes();
             }
-          });
-        },
-        error: function (err) {
-          console.error('Error loading CSV:', err);
-        },
-      });
-
-      // --- ЛОГИКА ФИЛЬТРАЦИИ ---
-      var currentFilters = ['all'];
-
-      function filterMap(category, btnElement) {
-        if (category === 'all') {
-          currentFilters = ['all'];
-          document
-            .querySelectorAll('.filter-btn')
-            .forEach((b) => b.classList.remove('active'));
-          btnElement.classList.add('active');
-        } else {
-          if (currentFilters.includes('all')) {
-            currentFilters = [];
-            document.querySelector('.filter-btn').classList.remove('active');
-          }
-          if (currentFilters.includes(category)) {
-            currentFilters = currentFilters.filter((c) => c !== category);
-            btnElement.classList.remove('active');
-          } else {
-            currentFilters.push(category);
-            btnElement.classList.add('active');
-          }
-          if (currentFilters.length === 0) {
-            currentFilters = ['all'];
-            document.querySelector('.filter-btn').classList.add('active');
-          }
-          if (typeof gtag === 'function') {
-            gtag('event', 'select_filter', { category_name: category });
-          }
+            window.Telegram.WebApp.ready();
         }
 
-        allMarkers.forEach(function (item) {
-          var isVisible =
-            currentFilters.includes('all') ||
-            currentFilters.some(function (filter) {
-              return item.category.includes(filter);
-            });
+        // --- LOCALIZATION ---
+        const translations = {
+            'en': {
+                'all': 'All', 'cafe': 'Cafe', 'restaurant': 'Restaurant', 'park': 'Park', 'mall': 'Shopping Mall', 'vet': 'Vet Clinic',
+                'gethere': 'Get directions', 'report': 'Report an issue', 'youarehere': 'You are here!', 'workinghours': 'Working hours',
+                'addtitle': 'Add New Place', 'addsubtitle': 'Drag map to pin exact location', 'lblname': 'Name',
+                'lblcat': 'Category', 'lblcom': 'Comment', 'btnsubmit': 'Submit Place', 'success': 'Place submitted for moderation!'
+            },
+            'ru': {
+                'all': 'Все', 'cafe': 'Кафе', 'restaurant': 'Ресторан', 'park': 'Парк', 'mall': 'ТЦ', 'vet': 'Ветклиника',
+                'gethere': 'Проложить маршрут', 'report': 'Сообщить об ошибке', 'youarehere': 'Вы здесь!', 'workinghours': 'Время работы',
+                'addtitle': 'Добавить место', 'addsubtitle': 'Передвиньте карту, чтобы указать точку', 'lblname': 'Название',
+                'lblcat': 'Категория', 'lblcom': 'Комментарий', 'btnsubmit': 'Отправить', 'success': 'Место отправлено на модерацию!'
+            },
+            'lv': {
+                'all': 'Visi', 'cafe': 'Kafejnīca', 'restaurant': 'Restorāns', 'park': 'Parks', 'mall': 'Tirdzniecības centrs', 'vet': 'Vetklīnika',
+                'gethere': 'Maršruts', 'report': 'Ziņot par kļūdu', 'youarehere': 'Jūs esat šeit!', 'workinghours': 'Darba laiks',
+                'addtitle': 'Pievienot vietu', 'addsubtitle': 'Pārvietojiet karti, lai norādītu vietu', 'lblname': 'Nosaukums',
+                'lblcat': 'Kategorija', 'lblcom': 'Komentārs', 'btnsubmit': 'Iesniegt', 'success': 'Vieta nosūtīta pārbaudei!'
+            }
+        };
 
-          if (isVisible) {
-            if (!map.hasLayer(item.layer)) map.addLayer(item.layer);
-          } else {
-            if (map.hasLayer(item.layer)) map.removeLayer(item.layer);
-          }
+        let userLangCode = 'en';
+        if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) {
+            userLangCode = window.Telegram.WebApp.initDataUnsafe.user.language_code || 'en';
+        }
+        const currentLang = (userLangCode.slice(0, 2).toLowerCase() in translations) ? userLangCode.slice(0, 2).toLowerCase() : 'en';
+        const t = translations[currentLang];
+
+        // Apply translations to UI
+        document.getElementById('btn-all').childNodes[0].textContent = t.all;
+        document.getElementById('btn-cafe').lastChild.textContent = ' ' + t.cafe;
+        document.getElementById('btn-restaurant').lastChild.textContent = ' ' + t.restaurant;
+        document.getElementById('btn-park').lastChild.textContent = ' ' + t.park;
+        document.getElementById('btn-mall').lastChild.textContent = ' ' + t.mall;
+        document.getElementById('btn-vet').lastChild.textContent = ' ' + t.vet;
+        
+        document.getElementById('txt-add-title').textContent = t.addtitle;
+        document.getElementById('txt-add-subtitle').textContent = t.addsubtitle;
+        document.getElementById('lbl-name').textContent = t.lblname;
+        document.getElementById('lbl-category').textContent = t.lblcat;
+        document.getElementById('lbl-comment').textContent = t.lblcom;
+        document.getElementById('btn-submit').textContent = t.btnsubmit;
+
+        // API Endpoint (Change localhost to your Bot's server IP when deploying)
+        const BACKEND_API_URL = "https://riga-pet-bot.onrender.com/api/add_place"; 
+        const BOT_USERNAME = "RigaDogMap_bot"; // Change to your actual bot username
+
+        // --- MAP INITIALIZATION ---
+        // Coordinates for Riga Center
+        var map = L.map('mapdiv', { zoomControl: false }).setView([56.9496, 24.1052], 13);
+
+        // Modern CartoDB Voyager Map Tiles
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; OpenStreetMap &copy; CARTO',
+            maxZoom: 19
+        }).addTo(map);
+
+        var allMarkers = [];
+
+        // Fetch data from Google Sheets
+        var googleSheetCSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQwZgrpWxkAs2GaMBWNpPvYAOLa2WrnyXI2RvvkpK59SsAVkxj46d296AlUJet0O8wI9ZRORt1MMNpub/pub?gid=0&single=true&output=csv";
+
+        Papa.parse(googleSheetCSV, {
+            download: true,
+            header: true,
+            complete: function(results) {
+                results.data.forEach(function(place) {
+                    var latStr = String(place.Lat || "").replace(',', '.');
+                    var lonStr = String(place.Lon || "").replace(',', '.');
+                    var lat = parseFloat(latStr);
+                    var lon = parseFloat(lonStr);
+
+                    if (!isNaN(lat) && !isNaN(lon)) {
+                        let placeCategory = place['Category_' + currentLang.toUpperCase()] || place['Category_EN'] || place['Category'];
+                        let placeComment = place['Comment_' + currentLang.toUpperCase()] || place['Comment_EN'] || place['Comment'];
+                        let workHours = place['WorkHours_' + currentLang.toUpperCase()] || place['WorkHours_EN'] || place['WorkHours'];
+                        
+                        let techCategory = (place['Category_EN'] || place['Category'] || "").toLowerCase();
+
+                        var pointColor = '#3388ff';
+                        if (techCategory.includes('park')) pointColor = '#28a745';
+                        if (techCategory.includes('vet')) pointColor = '#dc3545';
+                        if (techCategory.includes('cafe')) pointColor = '#007bff';
+                        if (techCategory.includes('restaurant')) pointColor = '#ffde73';
+                        if (techCategory.includes('shop') || techCategory.includes('mall')) pointColor = '#fd7e14';
+
+                        var marker = L.circleMarker([lat, lon], {
+                            radius: 9,
+                            fillColor: pointColor,
+                            color: '#fff',
+                            weight: 2,
+                            opacity: 1,
+                            fillOpacity: 0.9,
+                        }).addTo(map);
+
+                        allMarkers.push({ layer: marker, category: techCategory });
+
+                        // Handle marker click -> Open Bottom Sheet
+                        marker.on('click', function() {
+                            openPlaceSheet(place, placeCategory, placeComment, workHours, lat, lon);
+                            
+                            // Center map smoothly slightly below marker to account for sheet space
+                            map.flyTo([lat - 0.005, lon], 14, { animate: true, duration: 0.5 });
+                            
+                            if (typeof gtag === 'function') {
+                                gtag('event', 'click_place_pin', { 'place_name': place['Name'], 'place_category': techCategory });
+                            }
+                        });
+                    }
+                });
+            },
+            error: function(err) { console.error("Error loading CSV", err); }
         });
-      }
 
-      // --- ГЕОЛОКАЦИЯ ---
-      var userMarker = null;
-      function findUserLocation() {
-        if (typeof gtag === 'function') {
-          gtag('event', 'click_locate_button', {
-            event_category: 'ui_interaction',
-            event_label: 'locate_me',
-          });
+        // --- UI LOGIC: BOTTOM SHEETS ---
+        function closeAllSheets() {
+            document.getElementById('sheetOverlay').classList.remove('active');
+            document.getElementById('placeSheet').classList.remove('active');
+            document.getElementById('addPlaceSheet').classList.remove('active');
+            document.getElementById('crosshair').style.display = 'none';
         }
-        if (!navigator.geolocation) {
-          alert('Геолокация не поддерживается / Geolocation not supported');
-          return;
+
+        function openPlaceSheet(place, category, comment, hours, lat, lon) {
+            const sheetContent = document.getElementById('placeSheetContent');
+            const escapedNameForJs = (place['Name'] || "").replace(/'/g, "\\'");
+            
+            let html = '';
+            if (place['Photo URL']) {
+                html += `<img src="${place['Photo URL']}" class="sheet-img" alt="${place['Name']}">`;
+            }
+            html += `<h3 class="sheet-title">${place['Name']}</h3>`;
+            html += `<span class="sheet-category">${category}</span>`;
+            
+            if (hours) {
+                html += `<div class="sheet-hours"><span>${t.workinghours}:</span>${hours}</div>`;
+            }
+            if (comment) {
+                html += `<div class="sheet-comment">${comment}</div>`;
+            }
+
+            html += `
+                <a href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}" 
+                   target="_blank" class="btn-primary" 
+                   onclick="if(typeof gtag === 'function') gtag('event', 'click_route', {'place_name': '${escapedNameForJs}'});">
+                   ${t.gethere}
+                </a>
+                <div class="btn-report" onclick="handleReportClick(event, '${BOT_USERNAME}', '${escapedNameForJs}')">
+                   ${t.report}
+                </div>
+            `;
+
+            sheetContent.innerHTML = html;
+            
+            document.getElementById('sheetOverlay').classList.add('active');
+            document.getElementById('placeSheet').classList.add('active');
+            document.getElementById('addPlaceSheet').classList.remove('active');
         }
-        navigator.geolocation.getCurrentPosition(
-          function (position) {
-            var lat = position.coords.latitude;
-            var lon = position.coords.longitude;
-            if (userMarker) map.removeLayer(userMarker);
-            userMarker = L.marker([lat, lon]).addTo(map);
-            userMarker.bindPopup(`<b>${t.you_are_here}</b>`).openPopup();
-            map.flyTo([lat, lon], 15, { animate: true, duration: 1.5 });
-          },
-          function (error) {
-            alert(
-              'Не удалось определить местоположение / Unable to retrieve location',
+
+        function openAddPlaceSheet() {
+            closeAllSheets();
+            document.getElementById('sheetOverlay').classList.add('active');
+            document.getElementById('addPlaceSheet').classList.add('active');
+            document.getElementById('crosshair').style.display = 'block';
+        }
+
+        // --- SUBMIT NEW PLACE API CALL ---
+        async function submitNewPlace() {
+            const name = document.getElementById('add-name').value.trim();
+            const category = document.getElementById('add-category').value;
+            const comment = document.getElementById('add-comment').value.trim();
+            const center = map.getCenter();
+            
+            if (!name) {
+                alert(currentLang === 'ru' ? 'Введите название' : 'Please enter a name');
+                return;
+            }
+
+            const payload = {
+                name: name,
+                category: category,
+                comment: comment,
+                lat: center.lat,
+                lon: center.lng,
+                user_id: window.Telegram?.WebApp?.initDataUnsafe?.user?.id || 0,
+                username: window.Telegram?.WebApp?.initDataUnsafe?.user?.username || 'anonymous'
+            };
+
+            const submitBtn = document.getElementById('btn-submit');
+            submitBtn.disabled = true;
+            submitBtn.textContent = '...';
+
+            try {
+                // Send data to python backend
+                await fetch(BACKEND_API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                alert(t.success);
+                closeAllSheets();
+                // Reset form
+                document.getElementById('add-name').value = '';
+                document.getElementById('add-comment').value = '';
+            } catch (err) {
+                console.error("API error:", err);
+                alert("Error sending request. Please check backend connection.");
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = t.btnsubmit;
+            }
+        }
+
+        // --- FILTERING ---
+        var currentFilters = ['all'];
+
+        function filterMap(category, btnElement) {
+            if (category === 'all') {
+                currentFilters = ['all'];
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                btnElement.classList.add('active');
+            } else {
+                if (currentFilters.includes('all')) {
+                    currentFilters = [];
+                    document.querySelector('.filter-btn').classList.remove('active');
+                }
+                if (currentFilters.includes(category)) {
+                    currentFilters = currentFilters.filter(c => c !== category);
+                    btnElement.classList.remove('active');
+                } else {
+                    currentFilters.push(category);
+                    btnElement.classList.add('active');
+                }
+                if (currentFilters.length === 0) {
+                    currentFilters = ['all'];
+                    document.getElementById('btn-all').classList.add('active');
+                }
+            }
+
+            allMarkers.forEach(function(item) {
+                var isVisible = currentFilters.includes('all') || currentFilters.some(filter => item.category.includes(filter));
+                if (isVisible && !map.hasLayer(item.layer)) map.addLayer(item.layer);
+                else if (!isVisible && map.hasLayer(item.layer)) map.removeLayer(item.layer);
+            });
+        }
+
+        // --- LOCATE USER ---
+        var userMarker = null;
+        function findUserLocation() {
+            if (!navigator.geolocation) {
+                alert("Geolocation not supported");
+                return;
+            }
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+                    var lat = position.coords.latitude;
+                    var lon = position.coords.longitude;
+                    if (userMarker) map.removeLayer(userMarker);
+                    
+                    userMarker = L.circleMarker([lat, lon], {
+                        radius: 8, fillColor: '#007aff', color: '#fff', weight: 3, opacity: 1, fillOpacity: 1
+                    }).addTo(map);
+                    
+                    map.flyTo([lat, lon], 15, { animate: true, duration: 1.5 });
+                },
+                function(error) { alert("Unable to retrieve location"); },
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
             );
-          },
-          { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
-        );
-      }
+        }
+
+        // --- DEEP LINKING FOR REPORT ISSUE ---
+        function getSafeTelegramLink(botName, placeName) {
+            try {
+                const encoded = btoa(unescape(encodeURIComponent(placeName)))
+                    .replace(/\+/g, '-')
+                    .replace(/\//g, '_')
+                    .replace(/=+$/, '');
+                return `https://t.me/${botName}?start=error_${encoded}`;
+            } catch (e) {
+                console.error("Link encoding error", e);
+                return `https://t.me/${botName}`;
+            }
+        }
+
+        function handleReportClick(event, botName, placeName) {
+            event.preventDefault();
+            const telegramLink = getSafeTelegramLink(botName, placeName);
+            if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) {
+                window.Telegram.WebApp.openTelegramLink(telegramLink);
+                window.Telegram.WebApp.close();
+            } else {
+                window.open(telegramLink, '_blank');
+            }
+        }
     </script>
-  </body>
+</body>
 </html>
