@@ -45,7 +45,7 @@
             font-family: 'Inter', sans-serif;
             background-color: var(--bg-color);
             color: var(--text-color);
-            overflow: hidden; /* Prevent body scroll */
+            overflow: hidden;
         }
 
         #mapdiv {
@@ -176,7 +176,7 @@
             margin: -10px auto 20px;
         }
 
-        /* Sheet Content Typography & Elements */
+        /* Sheet Content */
         .sheet-img {
             width: 100%;
             height: 180px;
@@ -211,6 +211,7 @@
         }
         .sheet-hours span { display: block; font-weight: 600; margin-bottom: 4px; }
 
+        /* OK button for location picking mode */
         #btn-confirm-location {
             position: absolute;
             bottom: 110px;
@@ -278,7 +279,7 @@
             border-color: var(--button-color);
         }
         
-        /* Map Crosshair for adding a place */
+        /* Map Crosshair for location picking */
         .map-crosshair {
             position: absolute;
             top: 50%; 
@@ -297,7 +298,6 @@
         .map-crosshair::before { top: 14px; left: 0; width: 30px; height: 3px; }
         .map-crosshair::after { top: 0; left: 14px; width: 3px; height: 30px; }
         
-        /* Hide default Leaflet controls to keep UI clean */
         .leaflet-control-attribution { opacity: 0.6; font-size: 10px; }
         .leaflet-control-zoom { display: none; }
     </style>
@@ -327,7 +327,9 @@
     <!-- Map Container -->
     <div id="mapdiv"></div>
     <div class="map-crosshair" id="crosshair"></div>
-    <button id="btn-confirm-location" type="button"
+
+    <!-- ✅ FIX: restored style="display:none;" and closing > on opening tag -->
+    <button id="btn-confirm-location" type="button" style="display:none;">
         OK
     </button>
 
@@ -404,35 +406,26 @@
             'en': {
                 'all': 'All', 'cafe': 'Cafe', 'restaurant': 'Restaurant', 'park': 'Park', 'mall': 'Shopping Mall', 'vet': 'Vet Clinic',
                 'gethere': 'Get directions', 'report': 'Report an issue', 'youarehere': 'You are here!', 'workinghours': 'Working hours',
-                'addtitle': 'Add New Place', 'addsubtitle': 'Drag map to pin exact location', 'lblname': 'Name',
+                'addtitle': 'Add New Place', 'addsubtitle': 'First choose exact location on map, then fill details', 'lblname': 'Name',
                 'lblcat': 'Category', 'lblcom': 'Comment', 'btnsubmit': 'Submit Place', 'success': 'Place submitted for moderation!',
-                'addsubtitle': 'First choose exact location on map, then fill details',
-                'lbllocation': 'Location',
-                'picklocation': 'Choose on map',
-                'coordschosen': 'Selected: {lat}, {lon}',
-                'chooselocationfirst': 'Please choose location on map first'
+                'lbllocation': 'Location', 'picklocation': 'Choose on map',
+                'coordschosen': 'Selected: {lat}, {lon}', 'chooselocationfirst': 'Please choose location on map first'
             },
             'ru': {
                 'all': 'Все', 'cafe': 'Кафе', 'restaurant': 'Ресторан', 'park': 'Парк', 'mall': 'ТЦ', 'vet': 'Ветклиника',
                 'gethere': 'Проложить маршрут', 'report': 'Сообщить об ошибке', 'youarehere': 'Вы здесь!', 'workinghours': 'Время работы',
-                'addtitle': 'Добавить место', 'addsubtitle': 'Передвиньте карту, чтобы указать точку', 'lblname': 'Название',
+                'addtitle': 'Добавить место', 'addsubtitle': 'Сначала выберите точное место на карте, затем заполните поля', 'lblname': 'Название',
                 'lblcat': 'Категория', 'lblcom': 'Комментарий', 'btnsubmit': 'Отправить', 'success': 'Место отправлено на модерацию!',
-                'addsubtitle': 'Сначала выберите точное место на карте, затем заполните поля',
-                'lbllocation': 'Локация',
-                'picklocation': 'Выбрать на карте',
-                'coordschosen': 'Выбрано: {lat}, {lon}',
-                'chooselocationfirst': 'Сначала выберите локацию на карте'
+                'lbllocation': 'Локация', 'picklocation': 'Выбрать на карте',
+                'coordschosen': 'Выбрано: {lat}, {lon}', 'chooselocationfirst': 'Сначала выберите локацию на карте'
             },
             'lv': {
                 'all': 'Visi', 'cafe': 'Kafejnīca', 'restaurant': 'Restorāns', 'park': 'Parks', 'mall': 'Tirdzniecības centrs', 'vet': 'Vetklīnika',
                 'gethere': 'Maršruts', 'report': 'Ziņot par kļūdu', 'youarehere': 'Jūs esat šeit!', 'workinghours': 'Darba laiks',
-                'addtitle': 'Pievienot vietu', 'addsubtitle': 'Pārvietojiet karti, lai norādītu vietu', 'lblname': 'Nosaukums',
+                'addtitle': 'Pievienot vietu', 'addsubtitle': 'Vispirms izvēlieties vietu kartē, pēc tam aizpildiet datus', 'lblname': 'Nosaukums',
                 'lblcat': 'Kategorija', 'lblcom': 'Komentārs', 'btnsubmit': 'Iesniegt', 'success': 'Vieta nosūtīta pārbaudei!',
-                'addsubtitle': 'Vispirms izvēlieties vietu kartē, pēc tam aizpildiet datus',
-                'lbllocation': 'Atrašanās vieta',
-                'picklocation': 'Izvēlēties kartē',
-                'coordschosen': 'Izvēlēts: {lat}, {lon}',
-                'chooselocationfirst': 'Lūdzu, vispirms izvēlieties vietu kartē'
+                'lbllocation': 'Atrašanās vieta', 'picklocation': 'Izvēlēties kartē',
+                'coordschosen': 'Izvēlēts: {lat}, {lon}', 'chooselocationfirst': 'Lūdzu, vispirms izvēlieties vietu kartē'
             }
         };
 
@@ -443,43 +436,35 @@
         const currentLang = (userLangCode.slice(0, 2).toLowerCase() in translations) ? userLangCode.slice(0, 2).toLowerCase() : 'en';
         const t = translations[currentLang];
 
-        // Apply translations to UI
+        // Apply translations to static UI elements
         document.getElementById('btn-all').childNodes[0].textContent = t.all;
         document.getElementById('btn-cafe').lastChild.textContent = ' ' + t.cafe;
         document.getElementById('btn-restaurant').lastChild.textContent = ' ' + t.restaurant;
         document.getElementById('btn-park').lastChild.textContent = ' ' + t.park;
         document.getElementById('btn-mall').lastChild.textContent = ' ' + t.mall;
         document.getElementById('btn-vet').lastChild.textContent = ' ' + t.vet;
-        
         document.getElementById('txt-add-title').textContent = t.addtitle;
         document.getElementById('txt-add-subtitle').textContent = t.addsubtitle;
         document.getElementById('lbl-name').textContent = t.lblname;
         document.getElementById('lbl-category').textContent = t.lblcat;
         document.getElementById('lbl-comment').textContent = t.lblcom;
         document.getElementById('btn-submit').textContent = t.btnsubmit;
-
-        document.getElementById('txt-add-subtitle').textContent = t.addsubtitle;
         document.getElementById('lbl-location').textContent = t.lbllocation;
         document.getElementById('txt-pick-location').textContent = t.picklocation;
 
-
-        // API Endpoint (Change localhost to your Bot's server IP when deploying)
-        const BACKEND_API_URL = "https://riga-pet-bot.onrender.com/api/add_place"; 
-        const BOT_USERNAME = "RigaDogMap_bot"; // Change to your actual bot username
+        // API Endpoint
+        const BACKEND_API_URL = "https://riga-pet-bot.onrender.com/api/add_place";
+        const BOT_USERNAME = "RigaDogMap_bot";
 
         // --- MAP INITIALIZATION ---
-        // Coordinates for Riga Center
         var map = L.map('mapdiv', { zoomControl: false }).setView([56.9496, 24.1052], 13);
 
-        // Modern CartoDB Voyager Map Tiles
         L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
             attribution: '&copy; OpenStreetMap &copy; CARTO',
             maxZoom: 19
         }).addTo(map);
 
         var allMarkers = [];
-
-        // Fetch data from Google Sheets
         var googleSheetCSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQwZgrpWxkAs2G_aMBWNpPvYAOLa2WrnyXI2RvvkpK59SsAVkxj46d296AlU_Jet0O8wI9ZRORt1MMN/pub?gid=0&single=true&output=csv";
 
         let pickedLat = null;
@@ -501,7 +486,6 @@
                         let placeCategory = place['Category_' + currentLang.toUpperCase()] || place['Category_EN'] || place['Category'];
                         let placeComment = place['Comment_' + currentLang.toUpperCase()] || place['Comment_EN'] || place['Comment'];
                         let workHours = place['WorkHours_' + currentLang.toUpperCase()] || place['WorkHours_EN'] || place['WorkHours'];
-                        
                         let techCategory = (place['Category_EN'] || place['Category'] || "").toLowerCase();
 
                         var pointColor = '#3388ff';
@@ -512,28 +496,20 @@
                         if (techCategory.includes('shop') || techCategory.includes('mall')) pointColor = '#fd7e14';
 
                         var marker = L.circleMarker([lat, lon], {
-                            radius: 9,
-                            fillColor: pointColor,
-                            color: '#fff',
-                            weight: 2,
-                            opacity: 1,
-                            fillOpacity: 0.9,
+                            radius: 9, fillColor: pointColor, color: '#fff',
+                            weight: 2, opacity: 1, fillOpacity: 0.9,
                         }).addTo(map);
 
                         allMarkers.push({ layer: marker, category: techCategory });
 
-                        // Handle marker click -> Open Bottom Sheet
                         marker.on('click', function() {
                             openPlaceSheet(place, placeCategory, placeComment, workHours, lat, lon);
-                            
-                            // Center map smoothly slightly below marker to account for sheet space
                             map.flyTo([lat - 0.005, lon], 14, { animate: true, duration: 0.5 });
-                            
                             if (typeof gtag === 'function') {
                                 gtag('event', 'click_place_pin', { 'place_name': place['Name'], 'place_category': techCategory });
                             }
                         });
-                    }else {
+                    } else {
                         console.warn("Skipped invalid coordinates for:", place.Name);
                     }
                 });
@@ -546,18 +522,13 @@
             document.getElementById('sheetOverlay').classList.remove('active');
             document.getElementById('placeSheet').classList.remove('active');
             document.getElementById('addPlaceSheet').classList.remove('active');
-
             document.getElementById('crosshair').style.display = 'none';
             document.getElementById('btn-confirm-location').style.display = 'none';
-
             isPickingLocation = false;
-
-            // Always restore main UI
             document.querySelector('.filter-container').style.display = 'flex';
             document.getElementById('btn-locate').style.display = 'flex';
             document.getElementById('btn-add').style.display = 'flex';
         }
-
 
         function openPlaceSheet(place, category, comment, hours, lat, lon) {
             const sheetContent = document.getElementById('placeSheetContent');
@@ -569,14 +540,12 @@
             }
             html += `<h3 class="sheet-title">${place['Name']}</h3>`;
             html += `<span class="sheet-category">${category}</span>`;
-            
             if (hours) {
                 html += `<div class="sheet-hours"><span>${t.workinghours}:</span>${hours}</div>`;
             }
             if (comment) {
                 html += `<div class="sheet-comment">${comment}</div>`;
             }
-
             html += `
                 <a href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}" 
                    target="_blank" class="btn-primary" 
@@ -589,7 +558,6 @@
             `;
 
             sheetContent.innerHTML = html;
-            
             document.getElementById('sheetOverlay').classList.add('active');
             document.getElementById('placeSheet').classList.add('active');
             document.getElementById('addPlaceSheet').classList.remove('active');
@@ -603,60 +571,41 @@
             document.getElementById('crosshair').style.display = 'none';
         }
 
+        // --- LOCATION PICKING MODE ---
         const confirmBtn = document.getElementById('btn-confirm-location');
 
         function startLocationPick() {
-            // Hide the add-place sheet and overlay so map is fully interactive
             document.getElementById('addPlaceSheet').classList.remove('active');
             document.getElementById('sheetOverlay').classList.remove('active');
-
             isPickingLocation = true;
-
-            // Show crosshair
             document.getElementById('crosshair').style.display = 'block';
-
-            // Hide main UI elements during picking
             document.querySelector('.filter-container').style.display = 'none';
             document.getElementById('btn-locate').style.display = 'none';
             document.getElementById('btn-add').style.display = 'none';
-
-            // Show the single OK button
             confirmBtn.style.display = 'block';
         }
 
         function confirmLocationPick() {
             if (!isPickingLocation) return;
-
             const center = map.getCenter();
             pickedLat = center.lat;
             pickedLon = center.lng;
-
             isPickingLocation = false;
             document.getElementById('crosshair').style.display = 'none';
-
-            // Restore UI
+            confirmBtn.style.display = 'none';
             document.querySelector('.filter-container').style.display = 'flex';
             document.getElementById('btn-locate').style.display = 'flex';
             document.getElementById('btn-add').style.display = 'flex';
-
-            const confirmBtn = document.getElementById('btn-confirm-location');
-            confirmBtn.style.display = 'none';
-
-            // Show add-place sheet again and overlay
             document.getElementById('sheetOverlay').classList.add('active');
             document.getElementById('addPlaceSheet').classList.add('active');
-
             const coordsText = t.coordschosen
                 .replace('{lat}', pickedLat.toFixed(5))
                 .replace('{lon}', pickedLon.toFixed(5));
-
-            const coordsBlock = document.getElementById('chosen-coords');
             document.getElementById('coords-label').textContent = coordsText;
-            coordsBlock.style.display = 'block';
+            document.getElementById('chosen-coords').style.display = 'block';
         }
 
         confirmBtn.addEventListener('click', confirmLocationPick);
-
 
         // --- SUBMIT NEW PLACE API CALL ---
         async function submitNewPlace() {
@@ -668,18 +617,14 @@
                 alert(t.chooselocationfirst);
                 return;
             }
-
             if (!name) {
                 alert(currentLang === 'ru' ? 'Введите название' : 'Please enter a name');
                 return;
             }
 
             const payload = {
-                name: name,
-                category: category,
-                comment: comment,
-                lat: pickedLat,
-                lon: pickedLon,
+                name: name, category: category, comment: comment,
+                lat: pickedLat, lon: pickedLon,
                 user_id: window.Telegram?.WebApp?.initDataUnsafe?.user?.id || 0,
                 username: window.Telegram?.WebApp?.initDataUnsafe?.user?.username || 'anonymous'
             };
@@ -694,7 +639,6 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
-
                 alert(t.success);
                 closeAllSheets();
                 document.getElementById('add-name').value = '';
@@ -736,7 +680,6 @@
                     document.getElementById('btn-all').classList.add('active');
                 }
             }
-
             allMarkers.forEach(function(item) {
                 var isVisible = currentFilters.includes('all') || currentFilters.some(filter => item.category.includes(filter));
                 if (isVisible && !map.hasLayer(item.layer)) map.addLayer(item.layer);
@@ -756,11 +699,9 @@
                     var lat = position.coords.latitude;
                     var lon = position.coords.longitude;
                     if (userMarker) map.removeLayer(userMarker);
-                    
                     userMarker = L.circleMarker([lat, lon], {
                         radius: 8, fillColor: '#007aff', color: '#fff', weight: 3, opacity: 1, fillOpacity: 1
                     }).addTo(map);
-                    
                     map.flyTo([lat, lon], 15, { animate: true, duration: 1.5 });
                 },
                 function(error) { alert("Unable to retrieve location"); },
