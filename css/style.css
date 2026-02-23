@@ -177,13 +177,20 @@ body {
 
 
 /* 6. Sheet Content */
-.sheet-img {
+.sheet-img-wrap {
     width: 100%;
     height: 180px;
-    object-fit: cover;
     border-radius: 16px;
+    overflow: hidden;         /* hard crop — image never bleeds outside */
     margin-bottom: 16px;
-    background-color: #f0f0f0;
+    background-color: #e8e8e8;
+    flex-shrink: 0;
+}
+.sheet-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;        
+    object-position: center;
     display: block;
 }
 .sheet-title {
@@ -230,6 +237,11 @@ body {
     border: none;
     box-sizing: border-box;
     cursor: pointer;
+    transition: opacity 0.2s ease;
+}
+.btn-primary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
 }
 .btn-report {
     display: block;

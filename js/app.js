@@ -167,8 +167,13 @@ function openPlaceSheet(place, category, comment, hours, lat, lon) {
     const escapedName = (place['Name'] || "").replace(/'/g, "\\'");
     let html = '';
 
+    // Wrapped image: overflow:hidden on parent ensures no border-radius bleed
     if (place['Photo URL']) {
-        html += `<img src="${place['Photo URL']}" class="sheet-img" alt="${place['Name']}">`;
+        html += `
+            <div class="sheet-img-wrap">
+                <img src="${place['Photo URL']}" class="sheet-img" alt="${place['Name']}"
+                     onerror="this.parentElement.style.display='none'">
+            </div>`;
     }
     html += `<h3 class="sheet-title">${place['Name']}</h3>`;
     html += `<span class="sheet-category">${category}</span>`;
@@ -250,20 +255,27 @@ async function submitNewPlace() {
     const payload = {
         name, category, comment,
         lat: pickedLat, lon: pickedLon,
-        user_id:  window.Telegram?.WebApp?.initDataUnsafe?.user?.id       || 0,
-        username: window.Telegram?.WebApp?.initDataUnsafe?.user?.username  || 'anonymous'
+        user_id:  window.Telegram?.WebApp?.initDataUnsafe?.user?.id      || 0,
+        username: window.Telegram?.WebApp?.initDataUnsafe?.user?.username || 'anonymous'
     };
 
     const submitBtn = document.getElementById('btn-submit');
     submitBtn.disabled = true;
-    submitBtn.textContent = '...';
+    submitBtn.textContent = currentLang === 'ru' ? '⏳ Отправка...' : currentLang === 'lv' ? '⏳ Sūta...' : '⏳ Sending...';
 
     try {
-        await fetch(BACKEND_API_URL, {
+        const response = await fetch(BACKEND_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
+
+        if (!response.ok) throw new Error(`Server error: ${response.status}`);
+
+        // Show success state on button briefly before closing
+        submitBtn.textContent = '✅';
+        await new Promise(resolve => setTimeout(resolve, 800));
+
         alert(t.success);
         closeAllSheets();
         document.getElementById('add-name').value = '';
@@ -279,6 +291,7 @@ async function submitNewPlace() {
         submitBtn.textContent = t.btnsubmit;
     }
 }
+
 
 
 // 9. Filtering
