@@ -167,14 +167,20 @@ function openPlaceSheet(place, category, comment, hours, lat, lon) {
     const escapedName = (place['Name'] || "").replace(/'/g, "\\'");
     let html = '';
 
-    // Wrapped image: overflow:hidden on parent ensures no border-radius bleed
     if (place['Photo URL']) {
+        // img onload: detect logo vs photo by aspect ratio
+        // Logos are typically square or tall (ratio <= 2.5), photos are wide
+        // Logo SVG and PNG with transparency also detected this way
         html += `
-            <div class="sheet-img-wrap">
-                <img src="${place['Photo URL']}" class="sheet-img" alt="${place['Name']}"
-                     onerror="this.parentElement.style.display='none'">
+            <div class="sheet-img-wrap" id="img-wrap-${escapedName.replace(/\s/g,'')}">
+                <img src="${place['Photo URL']}"
+                     class="sheet-img"
+                     alt="${place['Name']}"
+                     onload="detectImgType(this)"
+                     onerror="this.closest('.sheet-img-wrap').style.display='none'">
             </div>`;
     }
+
     html += `<h3 class="sheet-title">${place['Name']}</h3>`;
     html += `<span class="sheet-category">${category}</span>`;
     if (hours)   html += `<div class="sheet-hours"><span>${t.workinghours}:</span>${hours}</div>`;
@@ -195,6 +201,18 @@ function openPlaceSheet(place, category, comment, hours, lat, lon) {
     document.getElementById('placeSheet').classList.add('active');
     document.getElementById('addPlaceSheet').classList.remove('active');
 }
+
+// Called via onload — switches wrap to logo-mode if image looks like a logo
+function detectImgType(imgEl) {
+    const wrap = imgEl.closest('.sheet-img-wrap');
+    if (!wrap) return;
+    const ratio = imgEl.naturalWidth / imgEl.naturalHeight;
+    // If image is square, tall, or only slightly wide — treat as logo
+    if (ratio < 2.5) {
+        wrap.classList.add('logo-mode');
+    }
+}
+
 
 function openAddPlaceSheet() {
     closeAllSheets();
