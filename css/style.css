@@ -158,21 +158,18 @@ body {
     z-index: 2001;
     border-top-left-radius: 24px;
     border-top-right-radius: 24px;
-    padding: 24px 20px 30px;
+    padding: 20px 20px 30px;   /* было 24px сверху */
     box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
     transition: bottom 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
     max-height: 85vh;
     overflow-y: auto;
     color: var(--text-color);
 }
+
 .bottom-sheet.active { bottom: 0; }
 
 .sheet-drag-handle {
-    width: 40px;
-    height: 5px;
-    background: #ddd;
-    border-radius: 3px;
-    margin: -10px auto 20px;
+    display: none;
 }
 
 

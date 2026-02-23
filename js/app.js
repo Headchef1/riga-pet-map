@@ -139,11 +139,19 @@ Papa.parse(GOOGLE_SHEET_CSV, {
 
             marker.on('click', function() {
                 openPlaceSheet(place, placeCategory, placeComment, workHours, lat, lon);
-                map.flyTo([lat - 0.005, lon], 14, { animate: true, duration: 0.5 });
+
+                // Only fly if map center is far enough — prevents shake on repeated clicks
+                const currentCenter = map.getCenter();
+                const dist = currentCenter.distanceTo([lat, lon]);
+                if (dist > 100) {
+                    map.flyTo([lat - 0.005, lon], 14, { animate: true, duration: 0.5 });
+                }
+
                 if (typeof gtag === 'function') {
                     gtag('event', 'click_place_pin', { place_name: place['Name'], place_category: techCategory });
                 }
             });
+
         });
     },
     error: function(err) { console.error("Error loading CSV:", err); }
@@ -258,7 +266,8 @@ async function submitNewPlace() {
         name, category, comment,
         lat: pickedLat, lon: pickedLon,
         user_id:  window.Telegram?.WebApp?.initDataUnsafe?.user?.id      || 0,
-        username: window.Telegram?.WebApp?.initDataUnsafe?.user?.username || 'anonymous'
+        username: window.Telegram?.WebApp?.initDataUnsafe?.user?.username || 'anonymous',
+        notify_user: true   // flag: backend should send confirmation to user
     };
 
     const submitBtn = document.getElementById('btn-submit');
@@ -274,25 +283,46 @@ async function submitNewPlace() {
 
         if (!response.ok) throw new Error(`Server error: ${response.status}`);
 
-        // Show success state on button briefly before closing
         submitBtn.textContent = '✅';
-        await new Promise(resolve => setTimeout(resolve, 800));
+        await new Promise(resolve => setTimeout(resolve, 600));
 
-        alert(t.success);
-        closeAllSheets();
+        // Use native Telegram popup instead of browser alert
+        if (window.Telegram?.WebApp?.showPopup) {
+            window.Telegram.WebApp.showPopup({
+                title: currentLang === 'ru' ? 'Спасибо!' : currentLang === 'lv' ? 'Paldies!' : 'Thank you!',
+                message: t.success,
+                buttons: [{ type: 'ok' }]
+            }, () => {
+                closeAllSheets();
+            });
+        } else {
+            alert(t.success);
+            closeAllSheets();
+        }
+
         document.getElementById('add-name').value = '';
         document.getElementById('add-comment').value = '';
         document.getElementById('chosen-coords').style.display = 'none';
         pickedLat = null;
         pickedLon = null;
+
     } catch (err) {
         console.error("API error:", err);
-        alert("Error sending request. Please check backend connection.");
+        if (window.Telegram?.WebApp?.showPopup) {
+            window.Telegram.WebApp.showPopup({
+                title: 'Error',
+                message: 'Failed to send. Please try again.',
+                buttons: [{ type: 'ok' }]
+            });
+        } else {
+            alert("Error sending request.");
+        }
     } finally {
         submitBtn.disabled = false;
         submitBtn.textContent = t.btnsubmit;
     }
 }
+
 
 
 
