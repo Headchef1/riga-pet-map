@@ -211,6 +211,23 @@
         }
         .sheet-hours span { display: block; font-weight: 600; margin-bottom: 4px; }
 
+        #btn-confirm-location {
+            position: absolute;
+            bottom: 110px;
+            right: 20px;
+            z-index: 1600;
+            display: none;
+            padding: 14px 24px;
+            border: none;
+            border-radius: 24px;
+            background: var(--button-color);
+            color: var(--button-text-color);
+            font-size: 15px;
+            font-weight: 700;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            cursor: pointer;
+        }
+
         .btn-primary {
             display: block;
             width: 100%;
@@ -311,10 +328,6 @@
     <div id="mapdiv"></div>
     <div class="map-crosshair" id="crosshair"></div>
     <button id="btn-confirm-location" type="button"
-        style="position:absolute; top:15px; right:20px; z-index:1600;
-               display:none; padding:8px 14px; border:none; border-radius:20px;
-               background:var(--button-color); color:var(--button-text-color);
-               font-size:13px; font-weight:600;">
         OK
     </button>
 
@@ -322,7 +335,6 @@
     <div class="fab-container">
         <button class="fab-btn locate" onclick="findUserLocation()" id="btn-locate">📍</button>
         <button class="fab-btn" onclick="openAddPlaceSheet()" id="btn-add">➕</button>
-        <button class="fab-btn" id="btn-confirm-location" style="display:none;" onclick="confirmLocationPick()">OK</button>
     </div>
 
     <!-- Bottom Sheet Overlay -->
@@ -591,38 +603,24 @@
             document.getElementById('crosshair').style.display = 'none';
         }
 
-        function startLocationPick() {
-            // Скрываем шторку, показываем крест и включаем режим выбора
-            document.getElementById('addPlaceSheet').classList.remove('active');
-            isPickingLocation = true;
-            document.getElementById('crosshair').style.display = 'block';
-        }
+        const confirmBtn = document.getElementById('btn-confirm-location');
 
         function startLocationPick() {
-            // Hide add-place sheet, enable picking mode
+            // Hide the add-place sheet and overlay so map is fully interactive
             document.getElementById('addPlaceSheet').classList.remove('active');
-            // Very important: remove overlay so map is fully interactive
             document.getElementById('sheetOverlay').classList.remove('active');
 
             isPickingLocation = true;
+
+            // Show crosshair
             document.getElementById('crosshair').style.display = 'block';
 
-            // Hide UI elements during picking
+            // Hide main UI elements during picking
             document.querySelector('.filter-container').style.display = 'none';
             document.getElementById('btn-locate').style.display = 'none';
             document.getElementById('btn-add').style.display = 'none';
 
-            // Show OK button in bottom-right corner (instead of +)
-            const confirmBtn = document.getElementById('btn-confirm-location');
-            confirmBtn.style.display = 'flex';
-        }
-
-        const confirmBtn = document.getElementById('btn-confirm-location');
-
-        function startLocationPick() {
-            document.getElementById('addPlaceSheet').classList.remove('active');
-            isPickingLocation = true;
-            document.getElementById('crosshair').style.display = 'block';
+            // Show the single OK button
             confirmBtn.style.display = 'block';
         }
 
