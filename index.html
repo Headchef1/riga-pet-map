@@ -322,6 +322,7 @@
     <div class="fab-container">
         <button class="fab-btn locate" onclick="findUserLocation()" id="btn-locate">📍</button>
         <button class="fab-btn" onclick="openAddPlaceSheet()" id="btn-add">➕</button>
+        <button class="fab-btn" id="btn-confirm-location" style="display:none;" onclick="confirmLocationPick()">OK</button>
     </div>
 
     <!-- Bottom Sheet Overlay -->
@@ -533,9 +534,16 @@
             document.getElementById('sheetOverlay').classList.remove('active');
             document.getElementById('placeSheet').classList.remove('active');
             document.getElementById('addPlaceSheet').classList.remove('active');
+
             document.getElementById('crosshair').style.display = 'none';
-            confirmBtn.style.display = 'none';
+            document.getElementById('btn-confirm-location').style.display = 'none';
+
             isPickingLocation = false;
+
+            // Always restore main UI
+            document.querySelector('.filter-container').style.display = 'flex';
+            document.getElementById('btn-locate').style.display = 'flex';
+            document.getElementById('btn-add').style.display = 'flex';
         }
 
 
@@ -590,22 +598,23 @@
             document.getElementById('crosshair').style.display = 'block';
         }
 
-        function confirmLocationPick() {
-            if (!isPickingLocation) return;
-            const center = map.getCenter();
-            pickedLat = center.lat;
-            pickedLon = center.lng;
-            isPickingLocation = false;
-            document.getElementById('crosshair').style.display = 'none';
-            document.getElementById('addPlaceSheet').classList.add('active');
+        function startLocationPick() {
+            // Hide add-place sheet, enable picking mode
+            document.getElementById('addPlaceSheet').classList.remove('active');
+            // Very important: remove overlay so map is fully interactive
+            document.getElementById('sheetOverlay').classList.remove('active');
 
-            const coordsText = t.coordschosen
-                .replace('{lat}', pickedLat.toFixed(5))
-                .replace('{lon}', pickedLon.toFixed(5));
+            isPickingLocation = true;
+            document.getElementById('crosshair').style.display = 'block';
 
-            const coordsBlock = document.getElementById('chosen-coords');
-            document.getElementById('coords-label').textContent = coordsText;
-            coordsBlock.style.display = 'block';
+            // Hide UI elements during picking
+            document.querySelector('.filter-container').style.display = 'none';
+            document.getElementById('btn-locate').style.display = 'none';
+            document.getElementById('btn-add').style.display = 'none';
+
+            // Show OK button in bottom-right corner (instead of +)
+            const confirmBtn = document.getElementById('btn-confirm-location');
+            confirmBtn.style.display = 'flex';
         }
 
         const confirmBtn = document.getElementById('btn-confirm-location');
@@ -619,16 +628,30 @@
 
         function confirmLocationPick() {
             if (!isPickingLocation) return;
+
             const center = map.getCenter();
             pickedLat = center.lat;
             pickedLon = center.lng;
+
             isPickingLocation = false;
             document.getElementById('crosshair').style.display = 'none';
+
+            // Restore UI
+            document.querySelector('.filter-container').style.display = 'flex';
+            document.getElementById('btn-locate').style.display = 'flex';
+            document.getElementById('btn-add').style.display = 'flex';
+
+            const confirmBtn = document.getElementById('btn-confirm-location');
             confirmBtn.style.display = 'none';
+
+            // Show add-place sheet again and overlay
+            document.getElementById('sheetOverlay').classList.add('active');
             document.getElementById('addPlaceSheet').classList.add('active');
+
             const coordsText = t.coordschosen
                 .replace('{lat}', pickedLat.toFixed(5))
                 .replace('{lon}', pickedLon.toFixed(5));
+
             const coordsBlock = document.getElementById('chosen-coords');
             document.getElementById('coords-label').textContent = coordsText;
             coordsBlock.style.display = 'block';
