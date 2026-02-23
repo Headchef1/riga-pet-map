@@ -264,18 +264,18 @@
         /* Map Crosshair for adding a place */
         .map-crosshair {
             position: absolute;
-            top: 50%; left: 50%;
+            top: 50%; 
+            left: 50%;
             transform: translate(-50%, -50%);
-            width: 30px; height: 30px;
-            z-index: 1500; /* Подняли Z-index выше карты и кнопок Leaflet */
+            width: 30px; 
+            height: 30px;
+            z-index: 1500;
             pointer-events: none;
             display: none;
-            /* Добавили тень, чтобы прицел был виден на светлом фоне */
-            filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.4)); 
+            filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.4));
         }
         .map-crosshair::before, .map-crosshair::after {
-            content: ''; position: absolute; background: #ff3b30; /* Красный цвет iOS */
-            border-radius: 2px;
+            content: ''; position: absolute; background: #ff3b30; border-radius: 2px;
         }
         .map-crosshair::before { top: 14px; left: 0; width: 30px; height: 3px; }
         .map-crosshair::after { top: 0; left: 14px; width: 3px; height: 30px; }
@@ -310,6 +310,13 @@
     <!-- Map Container -->
     <div id="mapdiv"></div>
     <div class="map-crosshair" id="crosshair"></div>
+    <button id="btn-confirm-location" type="button"
+        style="position:absolute; top:15px; right:20px; z-index:1600;
+               display:none; padding:8px 14px; border:none; border-radius:20px;
+               background:var(--button-color); color:var(--button-text-color);
+               font-size:13px; font-weight:600;">
+        OK
+    </button>
 
     <!-- Floating Buttons -->
     <div class="fab-container">
@@ -332,8 +339,18 @@
     <div class="bottom-sheet" id="addPlaceSheet">
         <div class="sheet-drag-handle"></div>
         <h2 class="sheet-title" id="txt-add-title">Add New Place</h2>
-        <p class="sheet-category" id="txt-add-subtitle">Drag map to pin location</p>
-        
+        <p class="sheet-category" id="txt-add-subtitle">Select location on map, then fill fields</p>
+
+        <div class="form-group">
+            <label id="lbl-location">Location</label>
+            <button type="button" class="btn-primary" style="margin-bottom: 10px;" onclick="startLocationPick()" id="btn-pick-location">
+                📍 <span id="txt-pick-location">Choose on map</span>
+            </button>
+            <div id="chosen-coords" style="font-size: 13px; color: var(--hint-color); display: none;">
+                <span id="coords-label"></span>
+            </div>
+        </div>
+
         <div class="form-group">
             <label id="lbl-name">Name</label>
             <input type="text" id="add-name" class="form-control" placeholder="Doggo Cafe">
@@ -375,19 +392,34 @@
                 'all': 'All', 'cafe': 'Cafe', 'restaurant': 'Restaurant', 'park': 'Park', 'mall': 'Shopping Mall', 'vet': 'Vet Clinic',
                 'gethere': 'Get directions', 'report': 'Report an issue', 'youarehere': 'You are here!', 'workinghours': 'Working hours',
                 'addtitle': 'Add New Place', 'addsubtitle': 'Drag map to pin exact location', 'lblname': 'Name',
-                'lblcat': 'Category', 'lblcom': 'Comment', 'btnsubmit': 'Submit Place', 'success': 'Place submitted for moderation!'
+                'lblcat': 'Category', 'lblcom': 'Comment', 'btnsubmit': 'Submit Place', 'success': 'Place submitted for moderation!',
+                'addsubtitle': 'First choose exact location on map, then fill details',
+                'lbllocation': 'Location',
+                'picklocation': 'Choose on map',
+                'coordschosen': 'Selected: {lat}, {lon}',
+                'chooselocationfirst': 'Please choose location on map first'
             },
             'ru': {
                 'all': 'Все', 'cafe': 'Кафе', 'restaurant': 'Ресторан', 'park': 'Парк', 'mall': 'ТЦ', 'vet': 'Ветклиника',
                 'gethere': 'Проложить маршрут', 'report': 'Сообщить об ошибке', 'youarehere': 'Вы здесь!', 'workinghours': 'Время работы',
                 'addtitle': 'Добавить место', 'addsubtitle': 'Передвиньте карту, чтобы указать точку', 'lblname': 'Название',
-                'lblcat': 'Категория', 'lblcom': 'Комментарий', 'btnsubmit': 'Отправить', 'success': 'Место отправлено на модерацию!'
+                'lblcat': 'Категория', 'lblcom': 'Комментарий', 'btnsubmit': 'Отправить', 'success': 'Место отправлено на модерацию!',
+                'addsubtitle': 'Сначала выберите точное место на карте, затем заполните поля',
+                'lbllocation': 'Локация',
+                'picklocation': 'Выбрать на карте',
+                'coordschosen': 'Выбрано: {lat}, {lon}',
+                'chooselocationfirst': 'Сначала выберите локацию на карте'
             },
             'lv': {
                 'all': 'Visi', 'cafe': 'Kafejnīca', 'restaurant': 'Restorāns', 'park': 'Parks', 'mall': 'Tirdzniecības centrs', 'vet': 'Vetklīnika',
                 'gethere': 'Maršruts', 'report': 'Ziņot par kļūdu', 'youarehere': 'Jūs esat šeit!', 'workinghours': 'Darba laiks',
                 'addtitle': 'Pievienot vietu', 'addsubtitle': 'Pārvietojiet karti, lai norādītu vietu', 'lblname': 'Nosaukums',
-                'lblcat': 'Kategorija', 'lblcom': 'Komentārs', 'btnsubmit': 'Iesniegt', 'success': 'Vieta nosūtīta pārbaudei!'
+                'lblcat': 'Kategorija', 'lblcom': 'Komentārs', 'btnsubmit': 'Iesniegt', 'success': 'Vieta nosūtīta pārbaudei!',
+                'addsubtitle': 'Vispirms izvēlieties vietu kartē, pēc tam aizpildiet datus',
+                'lbllocation': 'Atrašanās vieta',
+                'picklocation': 'Izvēlēties kartē',
+                'coordschosen': 'Izvēlēts: {lat}, {lon}',
+                'chooselocationfirst': 'Lūdzu, vispirms izvēlieties vietu kartē'
             }
         };
 
@@ -413,6 +445,11 @@
         document.getElementById('lbl-comment').textContent = t.lblcom;
         document.getElementById('btn-submit').textContent = t.btnsubmit;
 
+        document.getElementById('txt-add-subtitle').textContent = t.addsubtitle;
+        document.getElementById('lbl-location').textContent = t.lbllocation;
+        document.getElementById('txt-pick-location').textContent = t.picklocation;
+
+
         // API Endpoint (Change localhost to your Bot's server IP when deploying)
         const BACKEND_API_URL = "https://riga-pet-bot.onrender.com/api/add_place"; 
         const BOT_USERNAME = "RigaDogMap_bot"; // Change to your actual bot username
@@ -431,6 +468,10 @@
 
         // Fetch data from Google Sheets
         var googleSheetCSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQwZgrpWxkAs2G_aMBWNpPvYAOLa2WrnyXI2RvvkpK59SsAVkxj46d296AlU_Jet0O8wI9ZRORt1MMN/pub?gid=0&single=true&output=csv";
+
+        let pickedLat = null;
+        let pickedLon = null;
+        let isPickingLocation = false;
 
         Papa.parse(googleSheetCSV, {
             download: true,
@@ -493,7 +534,10 @@
             document.getElementById('placeSheet').classList.remove('active');
             document.getElementById('addPlaceSheet').classList.remove('active');
             document.getElementById('crosshair').style.display = 'none';
+            confirmBtn.style.display = 'none';
+            isPickingLocation = false;
         }
+
 
         function openPlaceSheet(place, category, comment, hours, lat, lon) {
             const sheetContent = document.getElementById('placeSheetContent');
@@ -535,16 +579,75 @@
             closeAllSheets();
             document.getElementById('sheetOverlay').classList.add('active');
             document.getElementById('addPlaceSheet').classList.add('active');
+            isPickingLocation = false;
+            document.getElementById('crosshair').style.display = 'none';
+        }
+
+        function startLocationPick() {
+            // Скрываем шторку, показываем крест и включаем режим выбора
+            document.getElementById('addPlaceSheet').classList.remove('active');
+            isPickingLocation = true;
             document.getElementById('crosshair').style.display = 'block';
         }
+
+        function confirmLocationPick() {
+            if (!isPickingLocation) return;
+            const center = map.getCenter();
+            pickedLat = center.lat;
+            pickedLon = center.lng;
+            isPickingLocation = false;
+            document.getElementById('crosshair').style.display = 'none';
+            document.getElementById('addPlaceSheet').classList.add('active');
+
+            const coordsText = t.coordschosen
+                .replace('{lat}', pickedLat.toFixed(5))
+                .replace('{lon}', pickedLon.toFixed(5));
+
+            const coordsBlock = document.getElementById('chosen-coords');
+            document.getElementById('coords-label').textContent = coordsText;
+            coordsBlock.style.display = 'block';
+        }
+
+        const confirmBtn = document.getElementById('btn-confirm-location');
+
+        function startLocationPick() {
+            document.getElementById('addPlaceSheet').classList.remove('active');
+            isPickingLocation = true;
+            document.getElementById('crosshair').style.display = 'block';
+            confirmBtn.style.display = 'block';
+        }
+
+        function confirmLocationPick() {
+            if (!isPickingLocation) return;
+            const center = map.getCenter();
+            pickedLat = center.lat;
+            pickedLon = center.lng;
+            isPickingLocation = false;
+            document.getElementById('crosshair').style.display = 'none';
+            confirmBtn.style.display = 'none';
+            document.getElementById('addPlaceSheet').classList.add('active');
+            const coordsText = t.coordschosen
+                .replace('{lat}', pickedLat.toFixed(5))
+                .replace('{lon}', pickedLon.toFixed(5));
+            const coordsBlock = document.getElementById('chosen-coords');
+            document.getElementById('coords-label').textContent = coordsText;
+            coordsBlock.style.display = 'block';
+        }
+
+        confirmBtn.addEventListener('click', confirmLocationPick);
+
 
         // --- SUBMIT NEW PLACE API CALL ---
         async function submitNewPlace() {
             const name = document.getElementById('add-name').value.trim();
             const category = document.getElementById('add-category').value;
             const comment = document.getElementById('add-comment').value.trim();
-            const center = map.getCenter();
-            
+
+            if (pickedLat === null || pickedLon === null) {
+                alert(t.chooselocationfirst);
+                return;
+            }
+
             if (!name) {
                 alert(currentLang === 'ru' ? 'Введите название' : 'Please enter a name');
                 return;
@@ -554,8 +657,8 @@
                 name: name,
                 category: category,
                 comment: comment,
-                lat: center.lat,
-                lon: center.lng,
+                lat: pickedLat,
+                lon: pickedLon,
                 user_id: window.Telegram?.WebApp?.initDataUnsafe?.user?.id || 0,
                 username: window.Telegram?.WebApp?.initDataUnsafe?.user?.username || 'anonymous'
             };
@@ -565,18 +668,19 @@
             submitBtn.textContent = '...';
 
             try {
-                // Send data to python backend
                 await fetch(BACKEND_API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
-                
+
                 alert(t.success);
                 closeAllSheets();
-                // Reset form
                 document.getElementById('add-name').value = '';
                 document.getElementById('add-comment').value = '';
+                pickedLat = null;
+                pickedLon = null;
+                document.getElementById('chosen-coords').style.display = 'none';
             } catch (err) {
                 console.error("API error:", err);
                 alert("Error sending request. Please check backend connection.");
