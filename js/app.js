@@ -168,15 +168,11 @@ function openPlaceSheet(place, category, comment, hours, lat, lon) {
     let html = '';
 
     if (place['Photo URL']) {
-        // img onload: detect logo vs photo by aspect ratio
-        // Logos are typically square or tall (ratio <= 2.5), photos are wide
-        // Logo SVG and PNG with transparency also detected this way
         html += `
-            <div class="sheet-img-wrap" id="img-wrap-${escapedName.replace(/\s/g,'')}">
+            <div class="sheet-img-wrap">
                 <img src="${place['Photo URL']}"
                      class="sheet-img"
                      alt="${place['Name']}"
-                     onload="detectImgType(this)"
                      onerror="this.closest('.sheet-img-wrap').style.display='none'">
             </div>`;
     }
@@ -201,18 +197,6 @@ function openPlaceSheet(place, category, comment, hours, lat, lon) {
     document.getElementById('placeSheet').classList.add('active');
     document.getElementById('addPlaceSheet').classList.remove('active');
 }
-
-// Called via onload — switches wrap to logo-mode if image looks like a logo
-function detectImgType(imgEl) {
-    const wrap = imgEl.closest('.sheet-img-wrap');
-    if (!wrap) return;
-    const ratio = imgEl.naturalWidth / imgEl.naturalHeight;
-    // If image is square, tall, or only slightly wide — treat as logo
-    if (ratio < 2.5) {
-        wrap.classList.add('logo-mode');
-    }
-}
-
 
 function openAddPlaceSheet() {
     closeAllSheets();
