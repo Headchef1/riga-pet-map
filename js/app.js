@@ -9,9 +9,9 @@
 //  5. CSV Data Loading & Markers
 //  6. Bottom Sheet UI
 //  7. Location Pick Mode
-//  8. Submit New Place
+//  8. Submit New Place (validation + cooldown)
 //  9. Filtering
-//  10. Locate User (Geolocation)
+//  10. Locate User (Geolocation + denied handler)
 //  11. Report Issue (Deep Link)
 // =============================================
 
@@ -35,7 +35,20 @@ const translations = {
         lblname: 'Name', lblcat: 'Category', lblcom: 'Comment', btnsubmit: 'Submit Place',
         success: 'Place submitted for moderation!',
         lbllocation: 'Location', picklocation: 'Choose on map',
-        coordschosen: 'Selected: {lat}, {lon}', chooselocationfirst: 'Please choose location on map first'
+        coordschosen: 'Selected: {lat}, {lon}', chooselocationfirst: 'Please choose location on map first',
+        // Validation
+        nameRequired:  'Please enter the place name',
+        nameInvalid:   'Only letters, numbers, spaces, hyphens and apostrophes are allowed',
+        nameTooLong:   'Name must be 50 characters or less',
+        // Cooldown
+        cooldownTitle: 'Please wait',
+        cooldownMsg:   'You can submit the next place in {sec} seconds',
+        // Geolocation denied
+        geoTitle:      'Location access denied',
+        geoMsg:        'To enable geolocation: open Telegram Settings → Privacy → Location and allow access for this app, or enable it in your browser settings.',
+        // Generic error
+        errorTitle:    'Error',
+        errorMsg:      'Failed to send. Please try again.'
     },
     'ru': {
         all: 'Все', cafe: 'Кафе', restaurant: 'Ресторан', park: 'Парк', mall: 'ТЦ', vet: 'Ветклиника',
@@ -44,7 +57,20 @@ const translations = {
         lblname: 'Название', lblcat: 'Категория', lblcom: 'Комментарий', btnsubmit: 'Отправить',
         success: 'Место отправлено на модерацию!',
         lbllocation: 'Локация', picklocation: 'Выбрать на карте',
-        coordschosen: 'Выбрано: {lat}, {lon}', chooselocationfirst: 'Сначала выберите локацию на карте'
+        coordschosen: 'Выбрано: {lat}, {lon}', chooselocationfirst: 'Сначала выберите локацию на карте',
+        // Validation
+        nameRequired:  'Введите название места',
+        nameInvalid:   'Допустимы буквы, цифры, пробел, дефис и апостроф',
+        nameTooLong:   'Название не должно превышать 50 символов',
+        // Cooldown
+        cooldownTitle: 'Подождите',
+        cooldownMsg:   'Следующую заявку можно отправить через {sec} сек',
+        // Geolocation denied
+        geoTitle:      'Геолокация недоступна',
+        geoMsg:        'Чтобы включить геолокацию: Настройки Telegram → Конфиденциальность → Геолокация → разрешить для этого приложения.',
+        // Generic error
+        errorTitle:    'Ошибка',
+        errorMsg:      'Не удалось отправить. Попробуйте ещё раз.'
     },
     'lv': {
         all: 'Visi', cafe: 'Kafejnīca', restaurant: 'Restorāns', park: 'Parks', mall: 'Tirdzniecības centrs', vet: 'Vetklīnika',
@@ -53,7 +79,20 @@ const translations = {
         lblname: 'Nosaukums', lblcat: 'Kategorija', lblcom: 'Komentārs', btnsubmit: 'Iesniegt',
         success: 'Vieta nosūtīta pārbaudei!',
         lbllocation: 'Atrašanās vieta', picklocation: 'Izvēlēties kartē',
-        coordschosen: 'Izvēlēts: {lat}, {lon}', chooselocationfirst: 'Lūdzu, vispirms izvēlieties vietu kartē'
+        coordschosen: 'Izvēlēts: {lat}, {lon}', chooselocationfirst: 'Lūdzu, vispirms izvēlieties vietu kartē',
+        // Validation
+        nameRequired:  'Ievadiet vietas nosaukumu',
+        nameInvalid:   'Atļauti tikai burti, cipari, atstarpe, defise un apostrofs',
+        nameTooLong:   'Nosaukums nedrīkst pārsniegt 50 rakstzīmes',
+        // Cooldown
+        cooldownTitle: 'Lūdzu, uzgaidiet',
+        cooldownMsg:   'Nākamo pieteikumu var iesniegt pēc {sec} sek',
+        // Geolocation denied
+        geoTitle:      'Atrašanās vieta nav pieejama',
+        geoMsg:        'Lai iespējotu: Telegram Iestatījumi → Privātums → Atrašanās vieta → atļaut šai lietotnei.',
+        // Generic error
+        errorTitle:    'Kļūda',
+        errorMsg:      'Neizdevās nosūtīt. Lūdzu, mēģiniet vēlreiz.'
     }
 };
 
@@ -84,9 +123,14 @@ document.getElementById('txt-pick-location').textContent = t.picklocation;
 
 
 // 3. Config & Constants
-const BACKEND_API_URL = "https://riga-pet-bot.onrender.com/api/add_place"; // Update on Hetzner migration
-const BOT_USERNAME    = "RigaDogMap_bot";
-const GOOGLE_SHEET_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQwZgrpWxkAs2G_aMBWNpPvYAOLa2WrnyXI2RvvkpK59SsAVkxj46d296AlU_Jet0O8wI9ZRORt1MMN/pub?gid=0&single=true&output=csv";
+const BACKEND_API_URL    = "https://riga-pet-bot.onrender.com/api/add_place"; // Update on Hetzner migration
+const BOT_USERNAME       = "RigaDogMap_bot";
+const GOOGLE_SHEET_CSV   = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQwZgrpWxkAs2G_aMBWNpPvYAOLa2WrnyXI2RvvkpK59SsAVkxj46d296AlU_Jet0O8wI9ZRORt1MMN/pub?gid=0&single=true&output=csv";
+const SUBMIT_COOLDOWN_MS = 60 * 1000; // 1 minute cooldown between submissions
+
+// Allowed: Latin, Cyrillic, Latvian extended chars (ā,č,ē,ģ,ī,ķ,ļ,ņ,š,ū,ž),
+//          digits, space, hyphen, apostrophe
+const NAME_REGEX = /^[a-zA-Z0-9а-яА-ЯёЁ\u0100-\u017F\s\-']+$/;
 
 
 // 4. Map Initialization
@@ -151,7 +195,6 @@ Papa.parse(GOOGLE_SHEET_CSV, {
                     gtag('event', 'click_place_pin', { place_name: place['Name'], place_category: techCategory });
                 }
             });
-
         });
     },
     error: function(err) { console.error("Error loading CSV:", err); }
@@ -207,6 +250,24 @@ function openPlaceSheet(place, category, comment, hours, lat, lon) {
 }
 
 function openAddPlaceSheet() {
+    // Step 2: Check submission cooldown before opening the form
+    const lastSubmit = parseInt(localStorage.getItem('lastSubmitTime') || '0');
+    const elapsed    = Date.now() - lastSubmit;
+    if (elapsed < SUBMIT_COOLDOWN_MS) {
+        const remaining = Math.ceil((SUBMIT_COOLDOWN_MS - elapsed) / 1000);
+        const msg = t.cooldownMsg.replace('{sec}', remaining);
+        if (window.Telegram?.WebApp?.showPopup) {
+            window.Telegram.WebApp.showPopup({
+                title: t.cooldownTitle,
+                message: msg,
+                buttons: [{ type: 'ok' }]
+            });
+        } else {
+            alert(msg);
+        }
+        return;
+    }
+
     closeAllSheets();
     document.getElementById('sheetOverlay').classList.add('active');
     document.getElementById('addPlaceSheet').classList.add('active');
@@ -254,20 +315,48 @@ confirmBtn.addEventListener('click', confirmLocationPick);
 
 
 // 8. Submit New Place
+// Helper: unified popup wrapper
+function showPopup(title, message, callback) {
+    if (window.Telegram?.WebApp?.showPopup) {
+        window.Telegram.WebApp.showPopup(
+            { title, message, buttons: [{ type: 'ok' }] },
+            callback || null
+        );
+    } else {
+        alert(`${title}\n${message}`);
+        if (callback) callback();
+    }
+}
+
 async function submitNewPlace() {
-    const name     = document.getElementById('add-name').value.trim();
+    const nameRaw  = document.getElementById('add-name').value.trim();
     const category = document.getElementById('add-category').value;
     const comment  = document.getElementById('add-comment').value.trim();
 
-    if (pickedLat === null || pickedLon === null) { alert(t.chooselocationfirst); return; }
-    if (!name) { alert(currentLang === 'ru' ? 'Введите название' : 'Please enter a name'); return; }
+    // Step 1: Frontend validation
+    if (!nameRaw) {
+        showPopup(t.errorTitle, t.nameRequired);
+        return;
+    }
+    if (nameRaw.length > 50) {
+        showPopup(t.errorTitle, t.nameTooLong);
+        return;
+    }
+    if (!NAME_REGEX.test(nameRaw)) {
+        showPopup(t.errorTitle, t.nameInvalid);
+        return;
+    }
+    if (pickedLat === null || pickedLon === null) {
+        showPopup(t.errorTitle, t.chooselocationfirst);
+        return;
+    }
 
     const payload = {
-        name, category, comment,
+        name: nameRaw, category, comment,
         lat: pickedLat, lon: pickedLon,
         user_id:  window.Telegram?.WebApp?.initDataUnsafe?.user?.id      || 0,
         username: window.Telegram?.WebApp?.initDataUnsafe?.user?.username || 'anonymous',
-        notify_user: true   // flag: backend should send confirmation to user
+        lang: currentLang   // pass language so backend sends confirmation in correct language
     };
 
     const submitBtn = document.getElementById('btn-submit');
@@ -281,25 +370,25 @@ async function submitNewPlace() {
             body: JSON.stringify(payload)
         });
 
-        if (!response.ok) throw new Error(`Server error: ${response.status}`);
+        if (!response.ok) {
+            // Try to get server-side validation error message
+            const errData = await response.json().catch(() => ({}));
+            throw new Error(errData.message || `Server error: ${response.status}`);
+        }
+
+        // Step 2: Save cooldown timestamp after successful submit
+        localStorage.setItem('lastSubmitTime', Date.now().toString());
 
         submitBtn.textContent = '✅';
         await new Promise(resolve => setTimeout(resolve, 600));
 
-        // Use native Telegram popup instead of browser alert
-        if (window.Telegram?.WebApp?.showPopup) {
-            window.Telegram.WebApp.showPopup({
-                title: currentLang === 'ru' ? 'Спасибо!' : currentLang === 'lv' ? 'Paldies!' : 'Thank you!',
-                message: t.success,
-                buttons: [{ type: 'ok' }]
-            }, () => {
-                closeAllSheets();
-            });
-        } else {
-            alert(t.success);
-            closeAllSheets();
-        }
+        showPopup(
+            currentLang === 'ru' ? 'Спасибо!' : currentLang === 'lv' ? 'Paldies!' : 'Thank you!',
+            t.success,
+            () => closeAllSheets()
+        );
 
+        // Reset form fields
         document.getElementById('add-name').value = '';
         document.getElementById('add-comment').value = '';
         document.getElementById('chosen-coords').style.display = 'none';
@@ -308,22 +397,12 @@ async function submitNewPlace() {
 
     } catch (err) {
         console.error("API error:", err);
-        if (window.Telegram?.WebApp?.showPopup) {
-            window.Telegram.WebApp.showPopup({
-                title: 'Error',
-                message: 'Failed to send. Please try again.',
-                buttons: [{ type: 'ok' }]
-            });
-        } else {
-            alert("Error sending request.");
-        }
+        showPopup(t.errorTitle, err.message || t.errorMsg);
     } finally {
         submitBtn.disabled = false;
         submitBtn.textContent = t.btnsubmit;
     }
 }
-
-
 
 
 // 9. Filtering
@@ -363,7 +442,11 @@ function filterMap(category, btnElement) {
 let userMarker = null;
 
 function findUserLocation() {
-    if (!navigator.geolocation) { alert("Geolocation not supported"); return; }
+    if (!navigator.geolocation) {
+        // Step 3: Geolocation not supported at all
+        showPopup(t.geoTitle, t.geoMsg);
+        return;
+    }
     navigator.geolocation.getCurrentPosition(
         function(position) {
             const lat = position.coords.latitude;
@@ -375,7 +458,12 @@ function findUserLocation() {
             }).addTo(map);
             map.flyTo([lat, lon], 15, { animate: true, duration: 1.5 });
         },
-        function() { alert("Unable to retrieve location"); },
+        function(error) {
+            // Step 3: Show instructions only on PERMISSION_DENIED
+            if (error.code === error.PERMISSION_DENIED) {
+                showPopup(t.geoTitle, t.geoMsg);
+            }
+        },
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
 }

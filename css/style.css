@@ -340,5 +340,11 @@ body {
 
 
 /* 9. Leaflet Overrides */
-.leaflet-control-attribution { opacity: 0.6; font-size: 10px; }
+.leaflet-control-attribution {
+    font-size: 9px !important;
+    opacity: 0.45 !important;
+    background: rgba(255, 255, 255, 0.55) !important;
+    box-shadow: none !important;
+    padding: 2px 5px !important;
+}
 .leaflet-control-zoom { display: none; }
